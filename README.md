@@ -1,6 +1,6 @@
 # Civic Relay
 
-A working first-pass infrastructure reporting prototype. The resident app is displayed inside a phone frame; the agency desk and routing explorer are desktop-friendly and responsive.
+Infrastructure report app.
 
 ## Run
 
