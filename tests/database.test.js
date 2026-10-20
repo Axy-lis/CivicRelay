@@ -27,6 +27,7 @@ test('database integration: real PostgreSQL/PostGIS migrations and access contro
  alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant select,insert on storage.objects to authenticated;
  insert into auth.users values('${USER}'),('${OTHER}'),('${STAFF}'),('${ADMIN}');`);
  await db.exec(await readFile(new URL('../supabase/migrations/202610200001_backend.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../supabase/migrations/202610200002_accounts.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../supabase/seed.sql',import.meta.url),'utf8'));
  await db.exec(`insert into public.agency_members values('${STAFF}','${WATER}');insert into public.workspace_admins values('${ADMIN}');`);
  await db.exec(`insert into public.agencies(id,name,categories,is_demo) values('10000000-0000-4000-8000-000000000004','Live Test Roads',array['road'],false);
@@ -83,6 +84,44 @@ test('database integration: real PostgreSQL/PostGIS migrations and access contro
   const item=(await rpc('list_workspace',['demo'])).incidents.find(i=>i.databaseId===incident);
   await rpc('update_incident',[incident,item.revision,'In progress','Rerouted',ROAD]);
   await actor(STAFF);assert.equal((await rpc('list_workspace',['demo'])).incidents.some(i=>i.databaseId===incident),false);
+ });
+ await t.test('profile editing is self-scoped and role assignments are never user-selected',async()=>{
+  await actor(USER);await rpc('save_profile',['Alex Resident']);
+  assert.equal((await rpc('workspace_access')).displayName,'Alex Resident');assert.equal((await rpc('workspace_access')).role,'resident');
+  await assert.rejects(()=>rpc('save_profile',[' ']),/display name/);
+  await assert.rejects(()=>rpc('set_agency_member',[USER,WATER,true]),/Coordinator/);
+  await assert.rejects(()=>rpc('agency_memberships'),/Coordinator/);
+  await actor(OTHER);assert.equal((await db.query('select * from public.profiles')).rows.length,0);
+ });
+ await t.test('coordinators grant and revoke staff access with immutable audit history',async()=>{
+  await actor(ADMIN);await rpc('set_agency_member',[OTHER,WATER,true]);await rpc('set_agency_member',[OTHER,WATER,true]);
+  const members=await rpc('agency_memberships');assert.equal(members.some(m=>m.userId===OTHER),true);assert.equal(members.every(m=>m.email===undefined),true);
+  assert.equal((await db.query('select count(*)::int n from public.membership_history')).rows[0].n,1);
+  await actor(OTHER);assert.equal((await rpc('workspace_access')).role,'agency');
+  await assert.rejects(()=>db.exec("delete from public.membership_history"),/permission denied/);
+  await actor(ADMIN);await rpc('set_agency_member',[OTHER,WATER,false]);
+  await actor(OTHER);assert.equal((await rpc('workspace_access')).role,'resident');
+  assert.equal((await db.query('select * from storage.objects')).rows.length,0);
+ });
+ await t.test('audit attribution is available to staff without revealing account IDs to residents',async()=>{
+  await actor(USER);const report=await submit(crypto.randomUUID(),'water','Audit test');
+  await actor(STAFF);await rpc('save_profile',['Water Staff']);
+  await rpc('update_incident',[report.databaseId,1,'Acknowledged','Investigating',null]);
+  const staffAudit=await rpc('incident_audit',[report.databaseId]);assert.equal(staffAudit.at(-1).actorId,STAFF);assert.equal(staffAudit.at(-1).actor,'You');
+  await actor(USER);const residentAudit=await rpc('incident_audit',[report.databaseId]);assert.equal(residentAudit.every(h=>h.actorId===null),true);assert.equal(residentAudit.at(-1).actor,'Report update');
+  await actor(OTHER);await assert.rejects(()=>rpc('incident_audit',[report.databaseId]),/Report access/);
+  await actor(ADMIN);await rpc('set_agency_member',[STAFF,WATER,false]);
+  await actor(STAFF);assert.equal((await rpc('list_workspace',['demo'])).incidents.length,0);
+  await assert.rejects(()=>rpc('update_incident',[report.databaseId,2,'Resolved','',null]),/Agency access/);
+  assert.equal((await db.query('select * from storage.objects')).rows.length,0);
+ });
+ await t.test('coordinators can revoke an inactive department but cannot grant new access to it',async()=>{
+  await actor(ADMIN);await rpc('set_agency_member',[STAFF,WATER,true]);
+  await db.exec('reset role');await db.query('update public.agencies set active=false where id=$1',[WATER]);
+  await actor(ADMIN);await assert.rejects(()=>rpc('set_agency_member',[OTHER,WATER,true]),/Department not available/);
+  await rpc('set_agency_member',[STAFF,WATER,false]);
+  await actor(STAFF);assert.equal((await rpc('workspace_access')).agencyIds.length,0);
+  await db.exec('reset role');await db.query('update public.agencies set active=true where id=$1',[WATER]);
  });
  await t.test('anonymous sessions cannot invoke write functions',async()=>{
   await actor('','anon');await assert.rejects(()=>submit(crypto.randomUUID()),/permission denied/);

@@ -11,7 +11,7 @@ enabled = false
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:4173"
-additional_redirect_urls = ["https://civic-relay-vinay-1019.animalargovindan.chatgpt.site"]
+additional_redirect_urls = ["https://civic-relay-vinay-1019.animalargovindan.chatgpt.site", "https://civic-relay-vinay-1019.animalargovindan.chatgpt.site/?auth=recovery", "http://127.0.0.1:4173/?auth=recovery"]
 [auth.email]
 enable_signup = true
 enable_confirmations = true
