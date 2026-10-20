@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "retrievedAt": "2026-10-20",
+  "counties": [
+    "Orange",
+    "Imperial",
+    "San Luis Obispo",
+    "Riverside",
+    "San Bernardino",
+    "Ventura",
+    "Los Angeles",
+    "San Diego",
+    "Kern",
+    "Santa Barbara"
+  ],
+  "sources": [
+    {
+      "id": "counties",
+      "url": "https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_county_500k.zip",
+      "retrievedAt": "2026-10-20",
+      "sha256": "aa976c00b181939755d0da757f4c7c2dc0103c3b3b4530fb2a91c2bb62fc777c",
+      "features": 10,
+      "vintage": "2025"
+    },
+    {
+      "id": "cities",
+      "url": "https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_06_place_500k.zip",
+      "retrievedAt": "2026-10-20",
+      "sha256": "d8aa978aa353baf70dcbf3b8d4499edf2b7f71dc8dbd33f3a6a099caf9c15607",
+      "features": 235,
+      "vintage": "2025"
+    },
+    {
+      "id": "districts",
+      "url": "https://www2.census.gov/geo/tiger/GENZ2025/shp/cb_2025_us_cd119_500k.zip",
+      "retrievedAt": "2026-10-20",
+      "sha256": "8e804518d333d67e24e25c61767c6a7c78fd0a0852179e8cc19c36fd66011010",
+      "features": 35,
+      "vintage": "119th Congress (2025\u20132026)"
+    },
+    {
+      "id": "water",
+      "url": "https://gispublic.waterboards.ca.gov/portalserver/rest/services/Drinking_Water/California_Drinking_Water_System_Area_Boundaries/MapServer/0",
+      "retrievedAt": "2026-10-20",
+      "sha256": "657c438b272ca374a3285d9cd0fcf03dddb5ebb9b5924703bff27e7aa65f51e5",
+      "features": 612,
+      "vintage": "Verified active retail service areas"
+    }
+  ],
+  "boundaryReviewMeters": 100,
+  "waterBoundaryReviewMeters": 25,
+  "notes": "Generalized cartographic boundaries; not parcel or asset ownership. Congressional vintage is current 119th Congress, not a future election map."
+}

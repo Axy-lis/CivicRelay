@@ -1,13 +1,14 @@
 {
   "name": "civic-relay",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "npm run build && python3 -m http.server 4173 --directory dist --bind 127.0.0.1",
     "test": "node --test tests/*.test.js",
-    "check": "node --check dist/app.js && node --check dist/core.js && node --check dist/location.js && node --check src/cloud-client.js && node --check dist/workspace.js && node --check dist/demo-accounts.js",
-    "build": "node scripts/build.mjs"
+    "check": "node --check dist/app.js && node --check dist/core.js && node --check dist/location.js && node --check src/cloud-client.js && node --check dist/workspace.js && node --check dist/demo-accounts.js && node --check dist/socal.js && node --check dist/coverage-map.js",
+    "build": "node scripts/build.mjs",
+    "coverage:sql": "node scripts/build-socal-sql.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0"
