@@ -1,64 +1,76 @@
 # Civic Relay
 
-A working first-pass infrastructure reporting prototype. The resident app is displayed inside a phone frame; the agency desk and routing explorer are desktop-friendly and responsive.
+An infrastructure reporting app with a phone-style resident interface, geographic routing, and an agency dashboard.
 
-## Run
+## Start locally
 
-Requires Node.js 20+ for checks and Python 3 for the local static server. No application dependencies or build step.
+Requires Node.js 22+ and Python 3. Install dependencies, then launch:
 
-```
+```sh
+npm ci
 npm start
 ```
 
-Open http://127.0.0.1:4173. Start a separate terminal for `npm test` and `npm run check`.
+Open http://127.0.0.1:4173. The build bundles the Supabase browser client locally; no external JavaScript CDN is required.
+
+```sh
+npm test
+npm run check
+npm run build
+```
+
+## Modes
+
+**Local demo** works immediately. It keeps reports in your browser, uses fictional sample service areas and incidents, and lets you explore both resident and agency workflows without an account.
+
+**Shared workspace** connects the same interface to Supabase PostgreSQL/PostGIS, Auth, and private photo storage. Select **Connect database** after setting up your project. Shared records never fall back to local samples and local reports are not uploaded automatically.
+
+Follow [Database setup](docs/DATABASE-SETUP.md) to create the hosted project, apply the migration, configure authentication, assign staff access, and verify cross-device reporting. You can prepare the app without credentials; a live database connection requires your own project URL and publishable key.
 
 ## Implemented
 
-- Resident reporting: photo upload, compression, category selection, description, GPS or manual coordinates, demo location presets, review, and local submission.
-- Geographic routing: point-in-polygon checks against explicit fixture boundaries, category-to-department matching, deterministic boundary handling, and manual review fallback.
-- Nearby issue suggestions: same category, unresolved, within 60 meters; residents choose whether to attach supporting evidence.
-- Agency desk: searchable queue, department/status filters, evidence viewer, editable statuses, notes, history, manual department assignment, JSON export, and sample reset.
-- District signals: at least three distinct unresolved incidents in a demo district/category over the last seven days. Supporting reports do not inflate incident counts.
-- Persistence in this browser using localStorage. Updates appear in both views and other tabs on the same origin.
+- Resident photo reporting, JPEG compression, category/description entry, GPS with independent timeout and cancellation, manual coordinates, and sample locations.
+- Local geographic fixtures plus server-side PostGIS routing in shared mode.
+- Nearby duplicate suggestions with resident confirmation; multiple supporting reports attach to one incident.
+- Searchable agency queue, status history, coordinator assignments, JSON export, and district signals.
+- Shared report transactions with idempotent request keys, revision checks, private attachments, upload retries, and periodic/manual refresh.
+- Email/password account flows and database-enforced resident, agency-member, and coordinator access.
+- Separate shared test/live environments; fictional fixtures are excluded from live routing.
 
 ## Demo sequence
 
-1. In Resident app, select Report an issue.
-2. Choose Water leak, optionally upload a photo, and describe the issue.
-3. Select Willow corner to match an existing sample incident, or use custom coordinates for a separate incident.
-4. Review the routed department. Attach to an existing incident or submit a separate issue.
-5. Switch to Agency desk, open the incident, and save a status update and note.
-6. Return to My reports and open the report to see the update.
-7. Use Routing to compare west/east service areas and out-of-coverage behavior.
+1. Start in local mode and select Report an issue.
+2. Choose Water leak, describe the issue, and optionally upload a photo.
+3. Select Willow corner for a nearby-incident suggestion, or enter separate coordinates.
+4. Confirm the routing and submit a new report or supporting evidence.
+5. Switch to Agency desk, open the incident, and update its status.
+6. Return to My reports and view the history.
+7. After database setup, repeat in shared mode using separate resident and assigned-staff accounts on different devices.
 
-## Explicit prototype limitations
+## Current limits
 
-All service areas, districts, department names, and seed incidents are fictional. Coordinates use an example area near San Jose, but the rectangular fixtures are not official city, utility, or congressional boundaries. Replace them with verified and category-specific service boundaries before real routing.
+All provided geographic fixtures, agency names, districts, and sample incidents are fictional. Real SoCal service areas and intake channels still need verified data. Reports outside shared live coverage are saved for coordinator review.
 
-This version has no cloud database, authentication, role enforcement, image recognition, external submission, email, or elected-official notifications. Agency controls are deliberately available to the demo visitor. Do not deploy it as an authenticated agency service without adding server-side access control and a shared database.
+External agency delivery and notifications, image recognition, internal-only notes, and local-to-cloud import are not implemented. The delivery-attempts table is groundwork for later integrations. All status notes are resident-visible. District signals summarize only records accessible to the current account.
 
-Records and images stay in localStorage for this origin/browser. Other devices, private browsing, localhost, and the published domain each have independent data. Clearing browser data removes reports. Large datasets may exceed storage limits; failed saves are reported and do not claim success. Export JSON to retain a copy; import is not implemented. Simultaneous tab edits use last-write-wins semantics.
+Local and shared data have separate storage. Clearing browser data deletes local demo records and connection/session preferences, but not records already saved in the database. Shared photo bytes are not included in JSON exports. Private photos are displayed using temporary signed URLs.
 
-Camera/file selection and geolocation depend on browser permission and support. An uploaded photo does not supply its location automatically. Online fonts are optional; the UI falls back to system fonts. The app does not call an image model or send photo contents to an AI service.
+The database tests run the actual SQL against isolated PGlite PostgreSQL/PostGIS with minimal Auth/Storage fixtures. Hosted Supabase email, Storage HTTP behavior, deployment configuration, and backup settings require the acceptance checks in the setup guide before a real pilot.
 
-## Structure
+## Location troubleshooting
 
-- `dist/index.html`: application shell.
-- `dist/styles.css`: responsive phone and agency interface.
-- `dist/app.js`: resident workflow, persistence, dashboard, and routing explorer.
-- `dist/core.js`: geographic routing, duplicate suggestions, alert rules, and submission logic.
-- `tests/core.test.js`: routing boundaries, fallbacks, duplicate handling, validation, submission integrity, and alert counting.
+Requests stop after 15 seconds, explain failures, and support retry/cancel. If an embedded preview cannot request permission, open the HTTPS demo in Safari or Chrome and allow location. On Mac also check System Settings → Privacy & Security → Location Services. This website cannot enable permissions for its host browser. A correctly detected location may be outside available service areas.
 
-Created in the chat workspace because macOS blocked access to the selected Documents folder. The entire project directory can be copied to that folder later.
+## Files
 
-## Saving the project elsewhere
+- `dist/`: responsive app, local reporting engine, location helper, workspace UI, and public connection defaults.
+- `src/cloud-client.js`: Supabase API, authentication, and photo-storage adapter.
+- `scripts/build.mjs`: bundles the shared client into `dist/cloud-client.js`.
+- `supabase/migrations/`: database tables, geographic indexes, RLS, RPCs, and private storage policies.
+- `supabase/seed.sql`: explicitly optional fictional routing fixtures.
+- `tests/`: reporting, location, client, and PostgreSQL/PostGIS integration tests.
+- `docs/DATABASE-SETUP.md`: deployment and acceptance-test guide.
 
-Copy the complete `civic-relay` folder into your desired folder in Finder. Alternatively, extract the accompanying `civic-relay-project.zip` there. The source archive contains the app, tests, run instructions, and hosting manifest; it excludes Git history and local tooling state. The hosting manifest still points to the existing private Site, so keep it if continuing the same project.
+Source repository: https://github.com/Axy-lis/CivicRelay
 
-Your submitted reports and photos live in browser storage, not in the source folder or ZIP. To save those too, use **Agency desk → Export records**. Import is not implemented.
-
-## Current location troubleshooting
-
-Location requests have an independent 15-second watchdog in addition to the browser's own timeout. The browser's timeout does not cover all time spent waiting for permission; an embedded preview may also fail to return either callback. Requests now end with specific guidance and allow retry or cancellation. Choosing a sample, editing coordinates, or leaving the location step cancels pending results so a late callback cannot replace your choice.
-
-If the preview cannot provide location, open the HTTPS demo URL directly in Safari or Chrome and allow the website's location request. On Mac, also check **System Settings → Privacy & Security → Location Services** for your browser. This website cannot enable OS permissions or add location capability to its host app. If location is still unavailable, select a sample or enter coordinates manually. A successfully detected real location may be outside the fictional service areas and will then require routing review.
+The local working copy is in this chat's workspace because macOS blocked the selected Documents folder. Copy the complete project folder or extract the project ZIP into a folder of your choice. Never copy `node_modules`, `.git`, or secret environment files when sharing source.
