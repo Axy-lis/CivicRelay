@@ -2,7 +2,7 @@
 
 The application has two independent modes:
 
-- **Local demo:** the original samples and browser-local records. No account or database is required.
+- **Local workspace:** official SoCal geography and browser-local records; simulated-account samples stay separate. No account or database is required.
 - **Shared workspace:** Supabase PostgreSQL/PostGIS, Supabase Auth, and a private Storage bucket. The same signed-in resident sees their reports on other devices; staff see incidents assigned to their agencies. Local samples and photos are never imported automatically.
 
 The shared backend is implemented but must be connected to your own Supabase project. No hosted account, email provider, or live production database is created by this repository.
@@ -14,7 +14,8 @@ Create a new Supabase project. Keep database credentials and secret/service-role
 For a first setup, open the project's SQL Editor and run the entire contents of:
 
 `supabase/migrations/202610200001_backend.sql`, then
-`supabase/migrations/202610200002_accounts.sql`
+`supabase/migrations/202610200002_accounts.sql`, then
+`supabase/migrations/202610200003_socal.sql`
 
 The migration creates the tables, geographic indexes, access policies, reporting functions, and the private `report-photos` bucket. It expects PostGIS in the `extensions` schema. Use a fresh project or check the existing extension schema before running it. Existing application tables with these names are not overwritten or migrated automatically.
 
@@ -31,9 +32,9 @@ Supabase local development through its CLI requires Docker. Docker is not needed
 
 For a **shared test workspace**, run `supabase/seed.sql` in the SQL Editor. It inserts only fictional agencies and service areas, not resident accounts or incident records. Keep the connection's workspace setting at **Shared test workspace**. Demo fixtures are never used to route a live-workspace report.
 
-For a **live workspace**, do not treat the seed as real coverage. Import verified agencies and category-specific service polygons marked `is_demo = false`, including source URL and verification date. Until then, a real report saves successfully in the manual-review queue. Phase 2 does not claim Southern California coverage or external delivery.
+For a **live workspace**, apply migration 003 and follow [SoCal data import](SOCAL.md#connect-supabase-later). Run `npm run coverage:sql` and apply the generated `supabase/socal.generated.sql` through the SQL Editor or a privileged connection. It imports real context and sourced department contacts. All real reports still require asset-ownership review before assignment; no external agency delivery is connected.
 
-For now, service-area `district` is a nullable label; importing independently maintained congressional boundaries is a later routing phase.
+Congressional context now uses independent 119th district polygons rather than a utility service area's district label. Original source context is captured on live reports and survives later data refreshes.
 
 ## 3. Configure authentication
 

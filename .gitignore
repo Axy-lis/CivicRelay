@@ -6,3 +6,4 @@ dist/cloud-client.js
 .env.*
 !.env.example
 .supabase/
+supabase/*.generated.sql
