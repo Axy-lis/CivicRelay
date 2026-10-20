@@ -1,0 +1,20 @@
+project_id = "civic-relay"
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+[db]
+major_version = 17
+[db.seed]
+enabled = false
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:4173"
+additional_redirect_urls = ["https://civic-relay-vinay-1019.animalargovindan.chatgpt.site"]
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+[storage]
+enabled = true
+file_size_limit = "3MiB"
