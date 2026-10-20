@@ -13,7 +13,8 @@ Create a new Supabase project. Keep database credentials and secret/service-role
 
 For a first setup, open the project's SQL Editor and run the entire contents of:
 
-`supabase/migrations/202610200001_backend.sql`
+`supabase/migrations/202610200001_backend.sql`, then
+`supabase/migrations/202610200002_accounts.sql`
 
 The migration creates the tables, geographic indexes, access policies, reporting functions, and the private `report-photos` bucket. It expects PostGIS in the `extensions` schema. Use a fresh project or check the existing extension schema before running it. Existing application tables with these names are not overwritten or migrated automatically.
 
@@ -64,7 +65,7 @@ To preconfigure the connection for all visitors, put only the URL, publishable k
 
 ## 5. Assign staff and coordinator access
 
-Create the relevant accounts first. In the Supabase SQL Editor, look up their user IDs in Authentication → Users. An administrator then inserts assignments using the actual UUIDs:
+Create the relevant accounts first. In the Supabase SQL Editor, look up their user IDs in Authentication → Users. Bootstrap the first coordinator in the SQL Editor using their actual UUID. That coordinator can then use **Account & connection → Manage agency access** to assign or remove agency staff. SQL assignments remain available:
 
 ```sql
 -- Replace every placeholder with actual UUIDs before running.

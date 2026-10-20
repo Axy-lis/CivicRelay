@@ -23,7 +23,7 @@ npm run build
 
 **Local demo** works immediately. It keeps reports in your browser, uses fictional sample service areas and incidents, and lets you explore both resident and agency workflows without an account.
 
-**Shared workspace** connects the same interface to Supabase PostgreSQL/PostGIS, Auth, and private photo storage. Select **Connect database** after setting up your project. Shared records never fall back to local samples and local reports are not uploaded automatically.
+**Shared workspace** connects the same interface to Supabase PostgreSQL/PostGIS, Auth, and private photo storage. Open **Accounts & database** to try a demo identity, or configure a real connection after setting up your project. Shared records never fall back to local samples and local reports are not uploaded automatically.
 
 Follow [Database setup](docs/DATABASE-SETUP.md) to create the hosted project, apply the migration, configure authentication, assign staff access, and verify cross-device reporting. You can prepare the app without credentials; a live database connection requires your own project URL and publishable key.
 
@@ -36,6 +36,14 @@ Follow [Database setup](docs/DATABASE-SETUP.md) to create the hosted project, ap
 - Shared report transactions with idempotent request keys, revision checks, private attachments, upload retries, and periodic/manual refresh.
 - Email/password account flows and database-enforced resident, agency-member, and coordinator access.
 - Separate shared test/live environments; fictional fixtures are excluded from live routing.
+
+## Phase 3 accounts
+
+Open **Accounts & database** and choose a resident, water staff, road staff, or coordinator identity. These are explicitly simulated, require no Supabase project, and use a separate sample dataset. Residents see their own evidence, staff see department-specific queues, and coordinators can assign unassigned reports. The original unrestricted local sandbox is available through **Exit account demo**.
+
+For real accounts, sign-in/sign-up, profile editing, confirmation resend, password recovery, and password changes are implemented. Roles come from the database. Coordinators can grant or remove agency membership using an existing account ID; the UI cannot create coordinator privileges. Status updates and membership changes have server-side audit records.
+
+See [Accounts and permissions](docs/ACCOUNTS.md) for the role matrix, demo walkthrough, and hosted acceptance checklist. Apply both SQL migrations in order when connecting a real project.
 
 ## Demo sequence
 
@@ -66,7 +74,7 @@ Requests stop after 15 seconds, explain failures, and support retry/cancel. If a
 - `dist/`: responsive app, local reporting engine, location helper, workspace UI, and public connection defaults.
 - `src/cloud-client.js`: Supabase API, authentication, and photo-storage adapter.
 - `scripts/build.mjs`: bundles the shared client into `dist/cloud-client.js`.
-- `supabase/migrations/`: database tables, geographic indexes, RLS, RPCs, and private storage policies.
+- `supabase/migrations/`: database tables, geographic indexes, access policies, reporting functions, profiles, staff administration, and audit attribution.
 - `supabase/seed.sql`: explicitly optional fictional routing fixtures.
 - `tests/`: reporting, location, client, and PostgreSQL/PostGIS integration tests.
 - `docs/DATABASE-SETUP.md`: deployment and acceptance-test guide.

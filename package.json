@@ -1,12 +1,12 @@
 {
   "name": "civic-relay",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "npm run build && python3 -m http.server 4173 --directory dist --bind 127.0.0.1",
     "test": "node --test tests/*.test.js",
-    "check": "node --check dist/app.js && node --check dist/core.js && node --check dist/location.js && node --check src/cloud-client.js",
+    "check": "node --check dist/app.js && node --check dist/core.js && node --check dist/location.js && node --check src/cloud-client.js && node --check dist/workspace.js && node --check dist/demo-accounts.js",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
