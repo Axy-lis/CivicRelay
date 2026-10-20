@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="theme-color" content="#143e35"><meta name="description" content="Civic Relay helps residents report infrastructure issues and agencies coordinate a response.">
+ <title>Civic Relay — A better block starts with you</title>
+ <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+ <header class="topbar"><a class="brand" href="#resident" aria-label="Civic Relay home"><span class="brand-mark">c<span>↗</span></span>civic<span class="brand-light">relay</span></a><nav aria-label="Workspace"><button data-view="resident" class="nav active">Resident app</button><button data-view="agency" class="nav">Agency desk</button><button data-view="routing" class="nav">Routing</button></nav><span class="prototype"><span></span> Working prototype</span></header>
+ <div class="demo-strip"><span>DEMO WORKSPACE</span> Fictional service areas · Saved on this browser · No external agency notifications</div>
+ <main id="app"></main>
+ <footer class="site-footer"><span>CIVIC RELAY</span><span>Small reports. Stronger neighborhoods.</span><span>Congressional App Challenge · Prototype</span></footer>
+ <div id="toast" role="status" aria-live="polite"></div>
+ <dialog id="detail-dialog" aria-labelledby="detail-title"><div id="detail-content"></div></dialog>
+ <script type="module" src="app.js"></script>
+</body>
+</html>
