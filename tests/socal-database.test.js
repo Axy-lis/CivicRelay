@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 import {postgis} from '@electric-sql/pglite-postgis';
 import {coverageSQL} from '../scripts/build-socal-sql.mjs';
+import {coverageEditorSQL} from '../scripts/build-socal-editor.mjs';
 import {createSoCalRouter} from '../dist/socal.js';
 
 test('SoCal PostGIS import, live resolver, immutable source context, and authorization',async()=>{
@@ -19,6 +20,13 @@ test('SoCal PostGIS import, live resolver, immutable source context, and authori
   for(const name of ['202610200001_backend.sql','202610200002_accounts.sql','202610200003_socal.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/seed.sql',import.meta.url),'utf8'));
   await db.exec(await coverageSQL());
+  const parts=await coverageEditorSQL();assert.ok(parts.every(f=>Buffer.byteLength(f.sql)<=450000));
+  await db.exec(parts[0].sql);await db.exec(parts[1].sql);
+  assert.equal((await db.query('select count(*)::int n from public.routing_features')).rows[0].n,892);
+  await assert.rejects(()=>db.exec(parts.at(-1).sql),/Incomplete/);await db.exec('rollback;');
+  assert.equal((await db.query('select count(*)::int n from public.routing_features')).rows[0].n,892);
+  for(const f of parts.slice(1,-1))await db.exec(f.sql);
+  await db.exec(parts.at(-1).sql);
   const data=Object.fromEntries(await Promise.all(['counties','cities','districts','water'].map(async k=>[k,JSON.parse(await readFile(new URL('../dist/data/'+k+'.geojson',import.meta.url),'utf8'))]))),router=createSoCalRouter(data);
   assert.equal((await db.query('select count(*)::int n from public.routing_features')).rows[0].n,892);
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);await db.exec('set role authenticated');

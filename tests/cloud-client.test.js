@@ -24,3 +24,9 @@ test('photo transport failures are surfaced and do not mark missing uploads comp
  await assert.rejects(()=>cloud.uploadPhoto('r','user/r.jpg','data:image/jpeg;base64,/9j/'),/Offline/);assert.equal(complete,false);
  await assert.rejects(()=>cloud.uploadPhoto('r','user/r.jpg','https://remote/image.jpg'),/JPEG/);
 });
+
+test('deletion sends revision and surfaces a missing database migration',async()=>{
+ let args;const cloud=createCloud(config,()=>({rpc:async(name,params)=>{args={name,params};return {data:null,error:null};}}));
+ await cloud.deleteIncident({databaseId:'incident-id',revision:4});assert.deepEqual(args,{name:'delete_incident',params:{p_incident:'incident-id',p_revision:4}});
+ const old=createCloud(config,()=>({rpc:async()=>({error:{code:'PGRST202',message:'Function not found'}})}));await assert.rejects(()=>old.deleteIncident({databaseId:'id',revision:1}),/202610240004_delete_reports.sql/);
+});

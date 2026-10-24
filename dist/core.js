@@ -48,7 +48,7 @@ export function createSubmission(state,draft,owner,existingId=null,now=Date.now(
  const next=structuredClone(state);
  const report={id:crypto.randomUUID(),description:draft.description.trim(),photo:draft.photo||null,created:now,owner};
  if(existingId){const incident=next.incidents.find(i=>i.id===existingId);if(!incident||!findDuplicates([incident],draft).length)throw new Error('This incident is no longer a duplicate candidate. Review your location.');incident.reports.push(report);incident.updated=now;incident.history.push({status:incident.status,at:now,note:'A resident added supporting evidence.'});return {state:next,id:incident.id};}
- const maxId=Math.max(1040,...next.incidents.map(i=>Number(i.id.slice(3))||0));const id='CR-'+(maxId+1);
+ const maxId=Math.max(1040,next.lastReference||0,...next.incidents.map(i=>Number(i.id.slice(3))||0));const id='CR-'+(maxId+1);next.lastReference=maxId+1;
  next.incidents.unshift({id,category:draft.category,title:draft.description.trim().split('\n')[0].slice(0,90),lat:draft.lat,lng:draft.lng,location:draft.location||'Selected location',status:'Submitted',created:now,updated:now,route:resolveRoute(draft.category,draft.lat,draft.lng),reports:[report],history:[{status:'Submitted',at:now,note:'Saved locally. External delivery is not connected.'}]});
  return {state:next,id};
 }

@@ -15,7 +15,8 @@ For a first setup, open the project's SQL Editor and run the entire contents of:
 
 `supabase/migrations/202610200001_backend.sql`, then
 `supabase/migrations/202610200002_accounts.sql`, then
-`supabase/migrations/202610200003_socal.sql`
+`supabase/migrations/202610200003_socal.sql`, then
+`supabase/migrations/202610240004_delete_reports.sql`
 
 The migration creates the tables, geographic indexes, access policies, reporting functions, and the private `report-photos` bucket. It expects PostGIS in the `extensions` schema. Use a fresh project or check the existing extension schema before running it. Existing application tables with these names are not overwritten or migrated automatically.
 
@@ -117,3 +118,11 @@ npm run build
 The database suite applies the actual migration to an isolated PGlite PostgreSQL engine with the PostGIS extension. The test harness supplies minimal Supabase Auth/Storage schemas and signed-in identities. It exercises real SQL transactions, geographic operations, grants and row-level policies. It does **not** replace a hosted Supabase acceptance test of email delivery, Storage HTTP behavior, deployment settings, or backups.
 
 This phase includes groundwork for later delivery integrations; `delivery_attempts` has no browser write policy and no external submission worker yet. District signals summarize only the incidents an account may access, not a public census of all reports. There is no auto-import of local reports, no offline submission queue, no account-deletion flow, no image recognition, and no direct department submissions. Configure hosted backups, monitoring, signup/rate limits, and retention before a public pilot.
+
+## Delete reports from the agency dashboard
+
+Existing projects need only the new `202610240004_delete_reports.sql` migration; do not rerun earlier migrations or geographic imports. Open an incident from Agency desk, select Delete report, and confirm. Assigned agency staff may delete their department's incidents; coordinators may delete any incident. Residents cannot delete through this action. An incident includes every supporting resident report, which is made explicit in the confirmation.
+
+Shared deletion records the actor and timestamp, preserves evidence/audit data in the database, and hides the incident from queues, resident tracking, duplicate searches, exports, district signals, and future photo access. It is soft deletion, not permanent erasure. Already issued signed photo links can remain valid until their five-minute expiry. Storage retention and a permanent purge process remain future work. Revisions prevent stale deletions; repeat requests do not add repeated audit entries.
+
+Local and simulated-account deletion removes the local incident and evidence after confirmation. Local reference numbers are not reused. Deleting in Civic Relay does not cancel an external agency ticket.

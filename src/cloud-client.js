@@ -46,6 +46,10 @@ export function createCloud(config, factory=createClient) {
   update:(incident,status,note='',agency=null)=>rpc('update_incident',{
    p_incident:incident.databaseId,p_revision:incident.revision,p_status:status,p_note:note,p_agency:agency
   }),
+  async deleteIncident(incident){
+   const {error}=await client.rpc('delete_incident',{p_incident:incident.databaseId,p_revision:incident.revision});
+   if(error){if(error.code==='PGRST202'||/Could not find the function/.test(error.message))throw new Error('Run database migration 202610240004_delete_reports.sql in Supabase to enable report deletion.');throw new Error(error.message);}
+  },
   async uploadPhoto(reportId,path,dataUrl){
    // This app's encoder produces JPEG. Reject arbitrary URLs and over-sized data
    // before upload; bucket policies enforce the same limits server-side.

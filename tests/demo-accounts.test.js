@@ -29,3 +29,12 @@ test('new resident demo reports have unique IDs and remain separate from other r
  assert.equal(visibleDemoState(result.state,demoAccount('demo-neighbor')).incidents.some(i=>i.id===result.id),false);
  assert.equal(visibleDemoState(result.state,demoAccount('demo-road-staff')).incidents.some(i=>i.id===result.id),true);
 });
+
+test('demo deletion is scoped to staff assignment and reference numbers are not reused',async()=>{
+ const {deleteDemoIncident}=await import('../dist/demo-accounts.js');const before=createAccountDemo();
+ assert.throws(()=>deleteDemoIncident(before,demoAccount('demo-resident'),'CR-1041'),/cannot delete/);
+ assert.throws(()=>deleteDemoIncident(before,demoAccount('demo-road-staff'),'CR-1041'),/cannot delete/);
+ const staff=deleteDemoIncident(before,demoAccount('demo-water-staff'),'CR-1041');assert.equal(staff.incidents.some(i=>i.id==='CR-1041'),false);assert.equal(before.incidents.length,7);
+ const last=deleteDemoIncident(before,demoAccount('demo-coordinator'),'CR-1047');
+ const next=createSubmission(last,{category:'road',description:'New report',lat:37.334,lng:-121.88},'demo-resident');assert.equal(next.id,'CR-1048');
+});
