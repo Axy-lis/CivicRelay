@@ -1,6 +1,12 @@
 # Civic Relay: remaining product work
 
-The resident workflow, draggable pin, local report tracking, agency dashboard, duplicate handling, account demos, and first SoCal geographic dataset are implemented. Supabase integration and permissions are coded and tested locally, but a hosted project is not connected. Geographic coverage is broader than verified department and delivery coverage.
+The resident workflow, draggable pin, local report tracking, agency dashboard, duplicate handling, account demos, and first SoCal geographic dataset are implemented. Supabase integration and permissions are coded and tested locally, but hosted acceptance on the user's project remains to be verified. Geographic coverage is broader than verified department and delivery coverage.
+
+## Completed in this update
+
+- [x] Add a destination pop-up before resident review and saving.
+- [x] Add non-emergency suspicious-activity reporting across local/shared submission, routing, scoped staff access, tracking, assignment, status, evidence, category filters, export, and deletion.
+- [x] Exclude safety reports from community duplicates and district signals; provide seven sourced contact handoffs with manual jurisdiction review elsewhere.
 
 ## Demo-ready priorities
 

@@ -10,5 +10,5 @@ select ('20000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,a.id,
  case when side=0 then 'District A' else 'District B' end,a.categories,
  extensions.st_multi(extensions.st_makeenvelope(case when side=0 then -121.94 else -121.895 end,37.30,
  case when side=0 then -121.895 else -121.85 end,37.36,4326)),true,case when side=0 then 1 else 0 end
-from (select a.*,row_number() over(order by id)*2+side as n,side from public.agencies a cross join generate_series(0,1) side where a.is_demo) a
+from (select a.*,row_number() over(order by id)*2+side as n,side from public.agencies a cross join generate_series(0,1) side where a.is_demo and a.name<>'Demo Public Safety') a
 on conflict(id) do nothing;

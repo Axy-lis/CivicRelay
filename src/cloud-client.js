@@ -19,7 +19,7 @@ export function createCloud(config, factory=createClient) {
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'civic-relay-auth-'+new URL(settings.url).hostname},
   global:{fetch: (input,init={})=>fetch(input,{...init,signal:init.signal||AbortSignal.timeout(20000)})}
  });
- const rpc=async(name,args={})=>{const {data,error}=await client.rpc(name,args);if(error)throw new Error(error.message);return data;};
+ const rpc=async(name,args={})=>{const {data,error}=await client.rpc(name,args);if(error){if(error.code==='PGRST202'&&args.p_category==='safety')throw new Error('Run migration 202610240005_safety_reporting.sql in Supabase to enable non-emergency reporting.');throw new Error(error.message);}return data;};
  const requireResult=({data,error})=>{if(error)throw new Error(error.message);return data;};
  return {
   client,settings,
@@ -36,12 +36,12 @@ export function createCloud(config, factory=createClient) {
   resendConfirmation:async email=>requireResult(await client.auth.resend({type:'signup',email,options:{emailRedirectTo:globalThis.location.origin+globalThis.location.pathname}})),
   setPassword:async password=>requireResult(await client.auth.updateUser({password})),
   list:()=>rpc('list_workspace',{p_environment:settings.environment}),
-  agencies:async()=>{const {data,error}=await client.from('agencies').select('id,name,is_demo').eq('active',true);if(error)throw error;return data.filter(a=>settings.environment==='demo'||!a.is_demo);},
-  route:(category,lat,lng)=>rpc('resolve_route',{p_category:category,p_lat:lat,p_lng:lng,p_environment:settings.environment}),
+  agencies:async()=>{const {data,error}=await client.from('agencies').select('id,name,is_demo,categories').eq('active',true);if(error)throw error;return data.filter(a=>settings.environment==='demo'||!a.is_demo);},
+  async route(category,lat,lng){try{return await rpc('resolve_route',{p_category:category,p_lat:lat,p_lng:lng,p_environment:settings.environment});}catch(e){if(category==='safety'&&/Invalid location or workspace/.test(e.message))throw new Error('Run migration 202610240005_safety_reporting.sql in Supabase to enable non-emergency reporting.');throw e;}},
   nearby:(draft)=>rpc('nearby_incidents',{p_category:draft.category,p_lat:draft.lat,p_lng:draft.lng,p_environment:settings.environment}),
   submit:(draft,requestId,existingId)=>rpc('submit_report',{
    p_request_id:requestId,p_category:draft.category,p_description:draft.description,p_lat:draft.lat,p_lng:draft.lng,
-   p_location:draft.location||'',p_environment:settings.environment,p_existing:existingId||null,p_has_photo:!!draft.photo
+   p_location:draft.location||'',p_environment:settings.environment,p_existing:existingId||null,p_has_photo:!!draft.photo,...(draft.category==='safety'?{p_non_emergency_confirmed:draft.nonEmergencyConfirmed===true}:{})
   }),
   update:(incident,status,note='',agency=null)=>rpc('update_incident',{
    p_incident:incident.databaseId,p_revision:incident.revision,p_status:status,p_note:note,p_agency:agency
