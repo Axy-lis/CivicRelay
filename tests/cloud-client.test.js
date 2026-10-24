@@ -37,3 +37,13 @@ test('safety submissions send explicit consent and report missing migration with
  await cloud.submit({category:'water',description:'Leak',lat:34,lng:-118},'r');assert.equal(Object.hasOwn(args,'p_non_emergency_confirmed'),false);
  const old=createCloud(config,()=>({rpc:async()=>({error:{code:'PGRST202',message:'Function not found'}})}));await assert.rejects(()=>old.submit({category:'safety',nonEmergencyConfirmed:true},'r'),/202610240005/);
 });
+
+test('AI client calls the authenticated same-project function without location or API secrets',async()=>{
+ const original=globalThis.fetch;let call;
+ try{
+  globalThis.fetch=async(url,options)=>{call={url,options};return Response.json({source:'ai',mode:'description',analysis:{}});};
+  const cloud=createCloud(config,()=>({auth:{getSession:async()=>({data:{session:{access_token:'user-token'}},error:null})}}));
+  await cloud.analyze({mode:'description',description:'A pothole'});assert.equal(call.url,'https://example.supabase.co/functions/v1/analyze-report');assert.equal(call.options.headers.Authorization,'Bearer user-token');assert.deepEqual(JSON.parse(call.options.body),{mode:'description',description:'A pothole'});
+  globalThis.fetch=async()=>Response.json({error:'Run migration 006'},{status:503});await assert.rejects(()=>cloud.analyze({mode:'description',description:'A pothole'}),/migration 006/);
+ }finally{globalThis.fetch=original;}
+});

@@ -18,3 +18,5 @@ enable_confirmations = true
 [storage]
 enabled = true
 file_size_limit = "3MiB"
+[functions.analyze-report]
+verify_jwt = true

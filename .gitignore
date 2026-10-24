@@ -10,3 +10,7 @@ supabase/*.generated.sql
 supabase/*.generated/
 supabase/socal-editor-import.zip
 supabase/socal-editor-import/
+
+dist/intelligence-contract.js
+supabase/functions/.env
+supabase/functions/.env.*

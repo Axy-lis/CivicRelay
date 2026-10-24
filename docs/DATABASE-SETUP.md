@@ -17,7 +17,8 @@ For a first setup, open the project's SQL Editor and run the entire contents of:
 `supabase/migrations/202610200002_accounts.sql`, then
 `supabase/migrations/202610200003_socal.sql`, then
 `supabase/migrations/202610240004_delete_reports.sql`, then
-`supabase/migrations/202610240005_safety_reporting.sql`
+`supabase/migrations/202610240005_safety_reporting.sql`, then
+`supabase/migrations/202610240006_report_intelligence.sql`
 
 The migration creates the tables, geographic indexes, access policies, reporting functions, and the private `report-photos` bucket. It expects PostGIS in the `extensions` schema. Use a fresh project or check the existing extension schema before running it. Existing application tables with these names are not overwritten or migrated automatically.
 
@@ -118,7 +119,7 @@ npm run build
 
 The database suite applies the actual migration to an isolated PGlite PostgreSQL engine with the PostGIS extension. The test harness supplies minimal Supabase Auth/Storage schemas and signed-in identities. It exercises real SQL transactions, geographic operations, grants and row-level policies. It does **not** replace a hosted Supabase acceptance test of email delivery, Storage HTTP behavior, deployment settings, or backups.
 
-This phase includes groundwork for later delivery integrations; `delivery_attempts` has no browser write policy and no external submission worker yet. District signals summarize only the incidents an account may access, not a public census of all reports. There is no auto-import of local reports, no offline submission queue, no account-deletion flow, no image recognition, and no direct department submissions. Configure hosted backups, monitoring, signup/rate limits, and retention before a public pilot.
+This phase includes groundwork for later delivery integrations; `delivery_attempts` has no browser write policy and no external submission worker yet. District signals summarize only the incidents an account may access, not a public census of all reports. There is no auto-import of local reports, no offline submission queue, no account-deletion flow, no enabled AI endpoint until separately configured, and no direct department submissions. Configure hosted backups, monitoring, signup/rate limits, and retention before a public pilot.
 
 ## Delete reports from the agency dashboard
 
@@ -133,3 +134,7 @@ Local and simulated-account deletion removes the local incident and evidence aft
 After migration 004, run only `supabase/migrations/202610240005_safety_reporting.sql`. Do not rerun older migrations or the geography import. It adds the safety category, explicit non-emergency acknowledgement, scoped safety-agency permissions, and seven sourced contact entries. The browser gives a specific migration message when an older backend rejects this category. Infrastructure submissions remain compatible with migration 004.
 
 Safety reports have private owner tracking, coordinator review, appropriate assigned staff access, status history, evidence, export, and deletion. They cannot join another report and are excluded from community duplicate lookup and congressional district signals. Saving does not file a police report or contact law enforcement. Contact links are manual handoffs, with jurisdiction and eligibility still requiring review. See [Safety reporting](SAFETY-REPORTING.md) for coverage and acceptance checks.
+
+## Photo and description intelligence
+
+After migrations 001–005, migration 006 adds private AI request budgets. Apply it once, then deploy the authenticated `analyze-report` Edge Function and set its server secrets as described in [Intelligence setup](INTELLIGENCE.md). This requires an OpenAI API key and billing; the static app never contains that key. Local Other-category description hints work immediately without this setup.
