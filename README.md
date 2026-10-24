@@ -29,6 +29,7 @@ Follow [Database setup](docs/DATABASE-SETUP.md) to create the hosted project, ap
 
 ## Implemented
 
+- Report intelligence: automatic local description hints for Other, plus opt-in photo/description AI suggestions through an authenticated server function. [Enable live analysis](docs/INTELLIGENCE.md).
 - Resident photo reporting, JPEG compression, category/description entry, GPS with independent timeout and cancellation, manual coordinates, and sample locations.
 - Real SoCal geography across ten counties, city search, movable map pin, sourced intake suggestions, boundary review, and server-side PostGIS import/routing. See [SoCal coverage](docs/SOCAL.md).
 - Destination pop-up before review, with suggested contacts and clear manual-review fallbacks.
@@ -45,7 +46,7 @@ Open **Accounts & database** and choose a resident, water staff, road staff, saf
 
 For real accounts, sign-in/sign-up, profile editing, confirmation resend, password recovery, and password changes are implemented. Roles come from the database. Coordinators can grant or remove agency membership using an existing account ID; the UI cannot create coordinator privileges. Status updates and membership changes have server-side audit records.
 
-See [Accounts and permissions](docs/ACCOUNTS.md) for the role matrix, demo walkthrough, and hosted acceptance checklist. Apply all five SQL migrations in order and import the SoCal dataset when connecting a real project.
+See [Accounts and permissions](docs/ACCOUNTS.md) for the role matrix, demo walkthrough, and hosted acceptance checklist. Apply all six SQL migrations in order and import the SoCal dataset when connecting a real project.
 
 ## Demo sequence
 
@@ -61,7 +62,7 @@ See [Accounts and permissions](docs/ACCOUNTS.md) for the role matrix, demo walkt
 
 Real geographic coverage is available for ten SoCal counties, 235 incorporated cities/towns, 35 intersecting current congressional districts, and 612 verified active water systems. Department intake coverage is partial (9 local infrastructure entries, 2 water contacts, and 7 non-emergency safety contacts). Every real report remains in ownership review until a coordinator assigns it. Detailed road/light ownership inventories and address geocoding remain Phase 4 work. Fictional fixtures are confined to explicitly simulated account and shared test workspaces. See [coverage details and remaining work](docs/SOCAL.md).
 
-External agency delivery and notifications, image recognition, internal-only notes, and local-to-cloud import are not implemented. The delivery-attempts table is groundwork for later integrations. All status notes are resident-visible. District signals summarize only records accessible to the current account.
+External agency delivery and notifications, precise visual damage overlays, internal-only notes, and local-to-cloud import are not implemented. Live AI analysis requires the separate function/secrets setup; it is not enabled by the website deployment. The delivery-attempts table is groundwork for later integrations. All status notes are resident-visible. District signals summarize only records accessible to the current account.
 
 Local and shared data have separate storage. Clearing browser data deletes local demo records and connection/session preferences, but not records already saved in the database. Shared photo bytes are not included in JSON exports. Private photos are displayed using temporary signed URLs.
 
@@ -86,3 +87,5 @@ Source repository: https://github.com/Axy-lis/CivicRelay
 The local working copy is in this chat's workspace because macOS blocked the selected Documents folder. Copy the complete project folder or extract the project ZIP into a folder of your choice. Never copy `node_modules`, `.git`, or secret environment files when sharing source.
 
 Projects already on migration 004 need only `supabase/migrations/202610240005_safety_reporting.sql` for safety reporting; no geographic reimport is required. Migration 004 enables dashboard deletion. Assigned staff and coordinators may delete reports from active views; shared evidence and audit records are retained. See the database setup guide for details.
+
+Photo/report intelligence setup is documented in [INTELLIGENCE.md](docs/INTELLIGENCE.md). Existing projects on migration 005 need only migration 006 and the analysis function/secrets, with no geography reimport.

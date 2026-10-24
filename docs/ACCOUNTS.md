@@ -29,7 +29,7 @@ A short demonstration:
 
 ## Real accounts after connection
 
-Apply all five migrations in order, then connect the project as described in DATABASE-SETUP.md.
+Apply all six migrations in order, then connect the project as described in DATABASE-SETUP.md.
 
 The real role rules are enforced in PostgreSQL. Frontend page guards are presentation and navigation controls, not the security boundary.
 

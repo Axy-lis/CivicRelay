@@ -37,6 +37,15 @@ export function createCloud(config, factory=createClient) {
   setPassword:async password=>requireResult(await client.auth.updateUser({password})),
   list:()=>rpc('list_workspace',{p_environment:settings.environment}),
   agencies:async()=>{const {data,error}=await client.from('agencies').select('id,name,is_demo,categories').eq('active',true);if(error)throw error;return data.filter(a=>settings.environment==='demo'||!a.is_demo);},
+  async analyze(input,{signal}={}){
+   const session=requireResult(await client.auth.getSession()).session;
+   if(!session?.access_token)throw new Error('Sign in before using AI analysis.');
+   const response=await fetch(settings.url+'/functions/v1/analyze-report',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:settings.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(input),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000)});
+   let body;try{body=await response.json();}catch{throw new Error('Analysis is unavailable. Deploy the analyze-report Edge Function in Supabase.');}
+   if(!response.ok)throw new Error(body.error||(response.status===404?'Deploy the analyze-report Edge Function in Supabase.':'Analysis failed. Check the function setup or continue manually.'));
+   if(body.source!=='ai'||body.mode!==input.mode)throw new Error('Unexpected analysis response. Continue manually.');
+   return body;
+  },
   async route(category,lat,lng){try{return await rpc('resolve_route',{p_category:category,p_lat:lat,p_lng:lng,p_environment:settings.environment});}catch(e){if(category==='safety'&&/Invalid location or workspace/.test(e.message))throw new Error('Run migration 202610240005_safety_reporting.sql in Supabase to enable non-emergency reporting.');throw e;}},
   nearby:(draft)=>rpc('nearby_incidents',{p_category:draft.category,p_lat:draft.lat,p_lng:draft.lng,p_environment:settings.environment}),
   submit:(draft,requestId,existingId)=>rpc('submit_report',{
