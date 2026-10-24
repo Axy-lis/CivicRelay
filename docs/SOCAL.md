@@ -64,7 +64,7 @@ Census borders use a 100-meter review margin and water borders use 25 meters. Th
 
 ## Connect Supabase later
 
-Apply all three migrations, in order. Then run `npm run coverage:sql`, open `supabase/socal.generated.sql` and apply it through a privileged database connection or Supabase SQL Editor. The generated file is intentionally ignored in Git because it is reproducible from the bundled assets. Do not put database credentials in the browser.
+Apply all four migrations, in order. Then run `npm run coverage:sql`, open `supabase/socal.generated.sql` and apply it through a privileged database connection or Supabase SQL Editor. The generated file is intentionally ignored in Git because it is reproducible from the bundled assets. If the SQL Editor rejects the file as too large, run `node scripts/build-socal-editor.mjs`. Open `supabase/socal-editor.generated/` and run its numbered SQL files in order, one query per file. The first creates private staging tables, the load files can be retried, and the last verifies counts before atomically replacing active routing data. Run the start file only at the beginning; rerunning it clears staged progress. Do not put database credentials in the browser.
 
 The import runs as a transaction, replaces only public routing datasets/features/contacts, and upserts the sourced agency names for coordinator assignment. It does not touch resident reports or automatically reactivate retired agencies. Authenticated residents cannot modify routing tables or call the private legacy resolver. The shared **live** resolver uses real polygons; the shared **test** resolver keeps fictional fixtures. Without the data import, live routes safely remain in review.
 
@@ -81,7 +81,8 @@ Live submissions capture a routing snapshot containing sources and suggested int
 - [ ] Import detailed official city/unincorporated boundaries where generalized Census shapes are insufficient.
 - [ ] Add maintained-road inventories, Caltrans highway ownership, utility streetlight inventories, tribal/federal/private land exceptions and contracts.
 - [ ] Replace suggested contacts with automatic assignment only where category-specific asset ownership is supported by evidence.
-- [ ] Add street/address search and a street basemap with a suitable geocoding/tile provider.
+- [ ] Add street imagery / a street basemap behind the draggable pin, including road names, intersections, and landmarks; select a provider and configure attribution, key restrictions, and usage limits.
+- [ ] Add street/address search with a suitable geocoding provider.
 - [ ] Validate real boundary cases with local staff; add a documented data-refresh schedule and stale-contact handling.
 - [ ] Import the prepared data into a connected Supabase project and run hosted acceptance checks.
 - [ ] Obtain agency submission permissions/API access, implement delivery receipts/retries, and distinguish accepted external tickets from local records.

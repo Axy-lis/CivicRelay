@@ -42,3 +42,9 @@ export function updateDemoIncident(data,account,id,status,note='',agency=null){
  incident.history.push({status,at:incident.updated,note:note||'Updated in account demo.',actorId:account.id,actor:account.name});
  return next;
 }
+
+export function deleteDemoIncident(data,account,id){
+ const incident=data.incidents.find(i=>i.id===id);
+ if(!incident||!canManageDemo(account,incident))throw new Error('This demo account cannot delete that report.');
+ const next=structuredClone(data);next.lastReference=Math.max(next.lastReference||1040,...next.incidents.map(i=>Number(i.id.slice(3))||0));next.incidents=next.incidents.filter(i=>i.id!==id);return next;
+}

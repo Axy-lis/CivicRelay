@@ -7,3 +7,6 @@ dist/cloud-client.js
 !.env.example
 .supabase/
 supabase/*.generated.sql
+supabase/*.generated/
+supabase/socal-editor-import.zip
+supabase/socal-editor-import/

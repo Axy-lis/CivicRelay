@@ -32,7 +32,7 @@ Follow [Database setup](docs/DATABASE-SETUP.md) to create the hosted project, ap
 - Resident photo reporting, JPEG compression, category/description entry, GPS with independent timeout and cancellation, manual coordinates, and sample locations.
 - Real SoCal geography across ten counties, city search, movable map pin, sourced intake suggestions, boundary review, and server-side PostGIS import/routing. See [SoCal coverage](docs/SOCAL.md).
 - Nearby duplicate suggestions with resident confirmation; multiple supporting reports attach to one incident.
-- Searchable agency queue, status history, coordinator assignments, JSON export, and district signals.
+- Searchable agency queue, status history, coordinator assignments, report deletion with confirmation, JSON export, and district signals.
 - Shared report transactions with idempotent request keys, revision checks, private attachments, upload retries, and periodic/manual refresh.
 - Email/password account flows and database-enforced resident, agency-member, and coordinator access.
 - Separate shared test/live environments; fictional fixtures are excluded from live routing.
@@ -43,7 +43,7 @@ Open **Accounts & database** and choose a resident, water staff, road staff, or 
 
 For real accounts, sign-in/sign-up, profile editing, confirmation resend, password recovery, and password changes are implemented. Roles come from the database. Coordinators can grant or remove agency membership using an existing account ID; the UI cannot create coordinator privileges. Status updates and membership changes have server-side audit records.
 
-See [Accounts and permissions](docs/ACCOUNTS.md) for the role matrix, demo walkthrough, and hosted acceptance checklist. Apply all three SQL migrations in order and import the SoCal dataset when connecting a real project.
+See [Accounts and permissions](docs/ACCOUNTS.md) for the role matrix, demo walkthrough, and hosted acceptance checklist. Apply all four SQL migrations in order and import the SoCal dataset when connecting a real project.
 
 ## Demo sequence
 
@@ -82,3 +82,5 @@ Requests stop after 15 seconds, explain failures, and support retry/cancel. If a
 Source repository: https://github.com/Axy-lis/CivicRelay
 
 The local working copy is in this chat's workspace because macOS blocked the selected Documents folder. Copy the complete project folder or extract the project ZIP into a folder of your choice. Never copy `node_modules`, `.git`, or secret environment files when sharing source.
+
+Existing Supabase projects need only `supabase/migrations/202610240004_delete_reports.sql` to enable dashboard deletion. Assigned staff and coordinators may delete reports from active views; shared evidence and audit records are retained. See the database setup guide for details.
