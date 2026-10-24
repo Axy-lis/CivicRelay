@@ -16,7 +16,8 @@ For a first setup, open the project's SQL Editor and run the entire contents of:
 `supabase/migrations/202610200001_backend.sql`, then
 `supabase/migrations/202610200002_accounts.sql`, then
 `supabase/migrations/202610200003_socal.sql`, then
-`supabase/migrations/202610240004_delete_reports.sql`
+`supabase/migrations/202610240004_delete_reports.sql`, then
+`supabase/migrations/202610240005_safety_reporting.sql`
 
 The migration creates the tables, geographic indexes, access policies, reporting functions, and the private `report-photos` bucket. It expects PostGIS in the `extensions` schema. Use a fresh project or check the existing extension schema before running it. Existing application tables with these names are not overwritten or migrated automatically.
 
@@ -126,3 +127,9 @@ Existing projects need only the new `202610240004_delete_reports.sql` migration;
 Shared deletion records the actor and timestamp, preserves evidence/audit data in the database, and hides the incident from queues, resident tracking, duplicate searches, exports, district signals, and future photo access. It is soft deletion, not permanent erasure. Already issued signed photo links can remain valid until their five-minute expiry. Storage retention and a permanent purge process remain future work. Revisions prevent stale deletions; repeat requests do not add repeated audit entries.
 
 Local and simulated-account deletion removes the local incident and evidence after confirmation. Local reference numbers are not reused. Deleting in Civic Relay does not cancel an external agency ticket.
+
+## Non-emergency safety reporting
+
+After migration 004, run only `supabase/migrations/202610240005_safety_reporting.sql`. Do not rerun older migrations or the geography import. It adds the safety category, explicit non-emergency acknowledgement, scoped safety-agency permissions, and seven sourced contact entries. The browser gives a specific migration message when an older backend rejects this category. Infrastructure submissions remain compatible with migration 004.
+
+Safety reports have private owner tracking, coordinator review, appropriate assigned staff access, status history, evidence, export, and deletion. They cannot join another report and are excluded from community duplicate lookup and congressional district signals. Saving does not file a police report or contact law enforcement. Contact links are manual handoffs, with jurisdiction and eligibility still requiring review. See [Safety reporting](SAFETY-REPORTING.md) for coverage and acceptance checks.

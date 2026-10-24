@@ -1,7 +1,7 @@
 // Geographic fixtures are fictional demo service areas, not official jurisdiction data.
-export const CATEGORIES = { water: 'Water leak', road: 'Road damage', lighting: 'Streetlight', other: 'Other issue' };
+export const CATEGORIES = { water: 'Water leak', road: 'Road damage', lighting: 'Streetlight', other: 'Other issue', safety: 'Suspicious activity' };
 export const STATUSES = ['Submitted', 'Acknowledged', 'In progress', 'Resolved'];
-export const AGENCIES = {water:'Demo Water Services',road:'Demo Public Works',lighting:'Demo Street Lighting'};
+export const AGENCIES = {water:'Demo Water Services',road:'Demo Public Works',lighting:'Demo Street Lighting',safety:'Demo Public Safety'};
 const rectangle=(west,south,east,north)=>[[west,south],[east,south],[east,north],[west,north],[west,south]];
 export const AREAS = [
  {id:'west',name:'West service area',district:'District A',ring:rectangle(-121.94,37.30,-121.895,37.36)},
@@ -32,10 +32,10 @@ export function routeReport(category,lat,lng){
  return {agency:AGENCIES[category],district:area.district,area:area.name,reason:`Location falls within ${area.name.toLowerCase()}; category maps to ${AGENCIES[category]}.`};
 }
 export function distanceMeters(a,b){const rad=x=>x*Math.PI/180;const dlat=rad(b.lat-a.lat),dlng=rad(b.lng-a.lng);const h=Math.sin(dlat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dlng/2)**2;return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));}
-export function findDuplicates(incidents,draft){return incidents.filter(i=>i.category===draft.category&&i.status!=='Resolved'&&distanceMeters(i,draft)<=60).sort((a,b)=>distanceMeters(a,draft)-distanceMeters(b,draft));}
+export function findDuplicates(incidents,draft){if(draft.category==='safety')return [];return incidents.filter(i=>i.category===draft.category&&i.status!=='Resolved'&&distanceMeters(i,draft)<=60).sort((a,b)=>distanceMeters(a,draft)-distanceMeters(b,draft));}
 export function clusterAlerts(incidents,now=Date.now()){
  const groups=new Map();
- for(const i of incidents){if(i.status==='Resolved'||!i.route.district||i.created>now||now-i.created>7*86400000)continue;const key=i.route.district+'|'+i.category;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(i);}
+ for(const i of incidents){if(i.category==='safety'||i.status==='Resolved'||!i.route.district||i.created>now||now-i.created>7*86400000)continue;const key=i.route.district+'|'+i.category;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(i);}
  return [...groups.entries()].filter(([,items])=>items.length>=3).map(([key,items])=>({key,district:items[0].route.district,category:items[0].category,count:items.length,ids:items.map(i=>i.id)}));
 }
 export function makeSeed(now=Date.now()){
@@ -45,10 +45,12 @@ export function makeSeed(now=Date.now()){
 }
 export function createSubmission(state,draft,owner,existingId=null,now=Date.now(),resolveRoute=routeReport){
  if(!CATEGORIES[draft.category]||!validCoordinates(draft.lat,draft.lng)||!draft.description?.trim()||draft.description.length>1200)throw new Error('Choose a category, valid location, and description (up to 1,200 characters).');
+ if(draft.category==='safety'&&draft.nonEmergencyConfirmed!==true)throw new Error('Confirm this is a non-emergency before saving.');
+ if(draft.category==='safety'&&existingId)throw new Error('Safety reports cannot be attached to another resident’s report.');
  const next=structuredClone(state);
  const report={id:crypto.randomUUID(),description:draft.description.trim(),photo:draft.photo||null,created:now,owner};
  if(existingId){const incident=next.incidents.find(i=>i.id===existingId);if(!incident||!findDuplicates([incident],draft).length)throw new Error('This incident is no longer a duplicate candidate. Review your location.');incident.reports.push(report);incident.updated=now;incident.history.push({status:incident.status,at:now,note:'A resident added supporting evidence.'});return {state:next,id:incident.id};}
  const maxId=Math.max(1040,next.lastReference||0,...next.incidents.map(i=>Number(i.id.slice(3))||0));const id='CR-'+(maxId+1);next.lastReference=maxId+1;
- next.incidents.unshift({id,category:draft.category,title:draft.description.trim().split('\n')[0].slice(0,90),lat:draft.lat,lng:draft.lng,location:draft.location||'Selected location',status:'Submitted',created:now,updated:now,route:resolveRoute(draft.category,draft.lat,draft.lng),reports:[report],history:[{status:'Submitted',at:now,note:'Saved locally. External delivery is not connected.'}]});
+ next.incidents.unshift({id,category:draft.category,title:draft.category==='safety'?'Non-emergency safety report':draft.description.trim().split('\n')[0].slice(0,90),nonEmergencyConfirmed:draft.category==='safety',lat:draft.lat,lng:draft.lng,location:draft.location||'Selected location',status:'Submitted',created:now,updated:now,route:resolveRoute(draft.category,draft.lat,draft.lng),reports:[report],history:[{status:'Submitted',at:now,note:draft.category==='safety'?'Saved locally. No police report filed or police notified.':'Saved locally. External delivery is not connected.'}]});
  return {state:next,id};
 }

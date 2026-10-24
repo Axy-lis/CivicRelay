@@ -64,11 +64,11 @@ Census borders use a 100-meter review margin and water borders use 25 meters. Th
 
 ## Connect Supabase later
 
-Apply all four migrations, in order. Then run `npm run coverage:sql`, open `supabase/socal.generated.sql` and apply it through a privileged database connection or Supabase SQL Editor. The generated file is intentionally ignored in Git because it is reproducible from the bundled assets. If the SQL Editor rejects the file as too large, run `node scripts/build-socal-editor.mjs`. Open `supabase/socal-editor.generated/` and run its numbered SQL files in order, one query per file. The first creates private staging tables, the load files can be retried, and the last verifies counts before atomically replacing active routing data. Run the start file only at the beginning; rerunning it clears staged progress. Do not put database credentials in the browser.
+Apply all five migrations, in order. Then run `npm run coverage:sql`, open `supabase/socal.generated.sql` and apply it through a privileged database connection or Supabase SQL Editor. The generated file is intentionally ignored in Git because it is reproducible from the bundled assets. If the SQL Editor rejects the file as too large, run `node scripts/build-socal-editor.mjs`. Open `supabase/socal-editor.generated/` and run its numbered SQL files in order, one query per file. The first creates private staging tables, the load files can be retried, and the last verifies counts before atomically replacing active routing data. Run the start file only at the beginning; rerunning it clears staged progress. Do not put database credentials in the browser.
 
 The import runs as a transaction, replaces only public routing datasets/features/contacts, and upserts the sourced agency names for coordinator assignment. It does not touch resident reports or automatically reactivate retired agencies. Authenticated residents cannot modify routing tables or call the private legacy resolver. The shared **live** resolver uses real polygons; the shared **test** resolver keeps fictional fixtures. Without the data import, live routes safely remain in review.
 
-Live submissions capture a routing snapshot containing sources and suggested intake. Later data refreshes do not change a report's original geographic context. Coordinator assignments update the snapshot's department and reason. Legacy live reports without snapshots retain their stored routing result. Real database hosting is still unconfigured; the import and migrations have been tested in isolated PostgreSQL/PostGIS.
+Live submissions capture a routing snapshot containing sources and suggested intake. Later data refreshes do not change a report's original geographic context. Coordinator assignments update the snapshot's department and reason. Legacy live reports without snapshots retain their stored routing result. Hosted acceptance must be checked on your own project; the import and migrations have been tested in isolated PostgreSQL/PostGIS.
 
 ## Validation
 
@@ -87,3 +87,7 @@ Live submissions capture a routing snapshot containing sources and suggested int
 - [ ] Import the prepared data into a connected Supabase project and run hosted acceptance checks.
 - [ ] Obtain agency submission permissions/API access, implement delivery receipts/retries, and distinguish accepted external tickets from local records.
 - [ ] Connect term-specific congressional offices/notification recipients and an approved escalation workflow.
+
+## Safety contacts
+
+Non-emergency safety reporting adds seven separately sourced directory entries: Los Angeles and San Diego city police, plus sheriff directories for unincorporated areas of Los Angeles, Orange, Riverside, San Bernardino, and San Diego counties. County entries are not used as substitutes for incorporated-city police. Border uncertainty and other cities/counties stay in manual jurisdiction review. These are contact suggestions, not verified dispatch areas or external delivery integrations. See [Safety reporting](SAFETY-REPORTING.md).

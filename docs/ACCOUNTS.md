@@ -12,6 +12,7 @@ Open **Accounts & database** (or the avatar in the resident phone), then choose:
 | Another resident — Jordan Lee | A separate set of owned sample reports |
 | Water staff — Taylor Morgan | Water Services queue and status updates |
 | Road staff — Casey Park | Public Works queue and status updates |
+| Safety staff — Jamie Park | Demo Public Safety queue, status updates and deletion |
 | Coordinator — Sam Chen | All sample incidents, including manual assignment of unassigned issues |
 
 No password, sign-up, email, or external project is involved. The page banner always says **Account demo**, **Simulated identity**, and **Not real authentication**. The identity selector intentionally does not provide production security; anyone using that local sample workspace can switch identities. Its records use a distinct browser-storage key and never replace the original sandbox or shared database data.
@@ -28,7 +29,7 @@ A short demonstration:
 
 ## Real accounts after connection
 
-Apply migrations `202610200001_backend.sql` and `202610200002_accounts.sql` in order, then connect the project as described in DATABASE-SETUP.md.
+Apply all five migrations in order, then connect the project as described in DATABASE-SETUP.md.
 
 The real role rules are enforced in PostgreSQL. Frontend page guards are presentation and navigation controls, not the security boundary.
 
@@ -73,7 +74,7 @@ Reset and confirmation messages avoid claiming that an email address is register
 
 ## Validation
 
-Automated SQL tests apply both migrations to isolated PostgreSQL/PostGIS and cover self-scoped profiles, resident/staff access, forbidden self-promotion, coordinator-only membership changes, audit privacy, and revoked photo/status access.
+Automated SQL tests apply the account migrations and subsequent feature migrations to isolated PostgreSQL/PostGIS and cover self-scoped profiles, resident/staff access, forbidden self-promotion, coordinator-only membership changes, audit privacy, and revoked photo/status access.
 
 Browser checks cover simulated identities, separate ownership, department queues, status changes, coordinator assignment, account-demo persistence, and mobile layouts. Real-account screens are tested with simulated Supabase HTTP responses, not live credentials.
 
@@ -85,3 +86,7 @@ Hosted acceptance remains outstanding until a project is connected:
 - Verify private photo access with actual Supabase Storage.
 - Grant and revoke staff membership, then verify access from the affected account.
 - Confirm sign-out and account switching clear protected report views.
+
+## Safety report access
+
+Safety reports are visible to their author, coordinators, and staff assigned to an active safety-capable agency. Water/road staff do not gain access through geographic proximity. Coordinators can assign safety reports only to agencies whose categories include `safety`. Staff membership and assignment are workspace administration, not evidence that an outside police agency received the report. Community duplicate lookup and district signals exclude safety reports. The simulated Safety staff account demonstrates this separation without authenticating a real user.

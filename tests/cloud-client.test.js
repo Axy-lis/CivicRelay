@@ -30,3 +30,10 @@ test('deletion sends revision and surfaces a missing database migration',async()
  await cloud.deleteIncident({databaseId:'incident-id',revision:4});assert.deepEqual(args,{name:'delete_incident',params:{p_incident:'incident-id',p_revision:4}});
  const old=createCloud(config,()=>({rpc:async()=>({error:{code:'PGRST202',message:'Function not found'}})}));await assert.rejects(()=>old.deleteIncident({databaseId:'id',revision:1}),/202610240004_delete_reports.sql/);
 });
+
+test('safety submissions send explicit consent and report missing migration without breaking infrastructure calls',async()=>{
+ let args;const cloud=createCloud(config,()=>({rpc:async(name,params)=>{args=params;return {data:{id:'CR-1'},error:null};}}));
+ await cloud.submit({category:'safety',description:'Past property damage',lat:34,lng:-118,nonEmergencyConfirmed:true},'r');assert.equal(args.p_non_emergency_confirmed,true);
+ await cloud.submit({category:'water',description:'Leak',lat:34,lng:-118},'r');assert.equal(Object.hasOwn(args,'p_non_emergency_confirmed'),false);
+ const old=createCloud(config,()=>({rpc:async()=>({error:{code:'PGRST202',message:'Function not found'}})}));await assert.rejects(()=>old.submit({category:'safety',nonEmergencyConfirmed:true},'r'),/202610240005/);
+});

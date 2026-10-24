@@ -1,3 +1,4 @@
+import {SAFETY_DIRECTORY} from './safety.js';
 import {pointInPolygon,validCoordinates} from './core.js';
 
 export const SOCAL_LOCATIONS=[
@@ -49,7 +50,7 @@ export function createSoCalRouter(data){
   data,
   route(category,lat,lng){
    const result={agency:null,area:null,district:null,county:null,city:null,provider:null,suggestedAgency:null,sources:[],isDemo:false,delivery:'manual',coverage:'socal',reason:'A valid location is required.'};
-   if(!validCoordinates(lat,lng)||!['water','road','lighting','other'].includes(category))return result;
+   if(!validCoordinates(lat,lng)||!['water','road','lighting','other','safety'].includes(category))return result;
    const counties=hits('counties',lat,lng),cities=hits('cities',lat,lng),districts=hits('districts',lat,lng);
    if(counties.length!==1)return {...result,reason:'Outside the ten-county SoCal area or on an ambiguous county boundary. Manual location review required.'};
    const county=counties[0],city=cities.length===1?cities[0]:null;
@@ -76,6 +77,11 @@ export function createSoCalRouter(data){
     if(entry){result.suggestedAgency=entry.name;result.intake=entry;result.sources.push({url:entry.url,id:'intake',retrievedAt:entry.checkedAt});}
     result.reason=boundary?'Near a city or county boundary. Verify jurisdiction and asset ownership.':entry?'Official local intake identified. Check whether this is a local public asset, a state highway, a utility-owned light, or private property before forwarding.':'Jurisdiction identified. A verified department intake and asset ownership are still needed.';
     result.highwayContact={name:'Caltrans · State highway maintenance',url:'https://csr.dot.ca.gov/'};
+   }else if(category==='safety'){
+    result.sensitive=true;
+    const entry=!boundary&&cities.length<=1?SAFETY_DIRECTORY.find(d=>d.kind===(city?'safety-city':'safety-county')&&d.id===(city||county).properties.id):null;
+    if(entry){result.suggestedAgency=entry.name;result.intake=entry;result.sources.push({url:entry.url,id:'non-emergency contact',retrievedAt:entry.checkedAt});}
+    result.reason=boundary?'Near a jurisdiction boundary. A coordinator must verify the non-emergency reporting agency.':entry?'Official non-emergency contact identified. Jurisdiction and report eligibility need confirmation; saving in Civic Relay does not notify police.':'No verified non-emergency contact for this location. A coordinator must verify jurisdiction; saving here does not notify police.';
    }else result.reason='Jurisdiction identified. This category needs department review.';
    return result;
   }
