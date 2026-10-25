@@ -21,7 +21,7 @@ export class SharedWorkspace {
   else{this.mode='local';this.emit();}
  }
  async connect(config){
-  const {createCloud}=await import('./cloud-client.js?v=20261025-analysis-connection');
+  const {createCloud}=await import('./cloud-client.js?v=20261025-analysis-timeout');
   const cloud=createCloud(config);
   const generation=++this.generation;
   this.subscription?.unsubscribe();this.cloud=cloud;this.config=cloud.settings;

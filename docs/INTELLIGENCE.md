@@ -77,3 +77,9 @@ This is a browser transport error, not a Gemini classification result. It can me
 5. Once the browser can read a response, the app can distinguish missing deployment, expired/rejected sign-in, missing migration/key, provider rejection and exhausted quota. Do not disable authentication or paste a Gemini key into frontend code to work around a transport error.
 
 The browser now preserves the draft and shows a connection/setup explanation instead of the raw Safari “Load failed” message. Server setup changes require redeploying your Supabase function; publishing the static site alone cannot change a function already running in your Supabase account.
+
+## Analysis timeouts
+
+The browser waits up to 75 seconds, leaving room for the server's sign-in check (10 seconds), database quota check (10 seconds), Gemini request (35 seconds), upload and function startup. Previously the browser stopped after 45 seconds, before those checks could finish. The server also applies a shared 60-second deadline to its outbound requests. This change prevents premature browser cancellation; it cannot guarantee a fast provider response.
+
+Redeploy `analyze-report` using the regenerated `supabase/analyze-report.generated.ts` file to receive stage-specific timeout messages and diagnostic logs. Logs contain only the stage, elapsed milliseconds, status and a reason code; no photos, descriptions or keys. Open Edge Functions → analyze-report → Logs and retry once. A `gemini` timeout identifies the provider step; `sign-in` or `database` identifies Supabase checks. No function invocation means checking the connected project URL, network and deployed function first. The static website update alone cannot update the function. No new migration or secret is needed.

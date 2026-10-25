@@ -66,3 +66,29 @@ test('dashboard bundle runs as one self-contained file and preserves preflight a
   const headers={origin:'https://civic-relay-vinay-1019.animalargovindan.chatgpt.site'};assert.equal((await handler(new Request('https://edge.test',{method:'OPTIONS',headers}))).status,204);assert.equal((await handler(new Request('https://edge.test',{method:'POST',headers,body:'{}'}))).status,401);
  }finally{if(prior===undefined)delete globalThis.Deno;else globalThis.Deno=prior;}
 });
+
+test('analysis timeouts identify the stalled stage without disclosing report content or secrets',async t=>{
+ const logs=[];t.mock.method(console,'warn',(...args)=>logs.push(args));
+ for(const stage of ['sign-in','database','gemini']){
+  const handler=createAnalysisHandler({env:k=>config[k],fetcher:async url=>{
+   const current=url.endsWith('/user')?'sign-in':url.includes('/rpc/')?'database':'gemini';
+   if(current===stage)throw new DOMException('private upstream details','TimeoutError');
+   return current==='sign-in'?Response.json({id:'resident'}):Response.json(null);
+  }});
+  const response=await handler(post({...input,description:'private resident description'}));
+  assert.equal(response.status,504);const body=await response.json();assert.match(body.error,/timed out|too long/);assert.equal(body.error.includes('private'),false);
+  const log=JSON.parse(logs.at(-1)[1]);assert.equal(log.stage,stage);assert.equal(log.reason,'timeout');assert.equal(log.status,504);
+ }
+ assert.equal(JSON.stringify(logs).includes('server-secret'),false);assert.equal(JSON.stringify(logs).includes('private'),false);
+});
+
+test('server request budgets fit within the browser deadline',async t=>{
+ const original=AbortSignal.timeout.bind(AbortSignal),budgets=[];
+ t.mock.method(AbortSignal,'timeout',ms=>{budgets.push(ms);return original(ms);});
+ const handler=createAnalysisHandler({env:k=>config[k],fetcher:async url=>url.endsWith('/user')?Response.json({id:'resident'}):url.includes('/rpc/')?Response.json(null):Response.json({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(value)}]}}]})});
+ assert.equal((await handler(post(input))).status,200);assert.deepEqual(budgets,[60000,10000,10000,35000]);
+ const {createCloud}=await import('../src/cloud-client.js');
+ const cloud=createCloud({url:'https://example.supabase.co',publishableKey:'sb_publishable_example',environment:'demo'},()=>({auth:{getSession:async()=>({data:{session:{access_token:'user-token'}}})}}));
+ t.mock.method(globalThis,'fetch',async()=>Response.json({provider:'gemini',source:'ai',mode:'photo'}));
+ await cloud.analyze(input);assert.equal(budgets.at(-1),75000);assert.ok(10000+10000+35000<75000);
+});

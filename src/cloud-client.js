@@ -41,12 +41,12 @@ export function createCloud(config, factory=createClient) {
    let session;
    try{session=requireResult(await client.auth.getSession()).session;}catch{throw new Error('Could not confirm your sign-in. Check your connection, then sign out and sign in again.');}
    if(!session?.access_token)throw new Error('Sign in before using AI analysis.');
-   const requestSignal=signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000);
+   const requestSignal=signal?AbortSignal.any([signal,AbortSignal.timeout(75000)]):AbortSignal.timeout(75000);
    let response;
    try{response=await fetch(settings.url+'/functions/v1/analyze-report',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:settings.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(input),signal:requestSignal});}
    catch(e){
     if(signal?.aborted)throw new Error('Analysis canceled. Your draft is unchanged.');
-    if(requestSignal.aborted||e.name==='TimeoutError')throw new Error('Analysis took too long to respond. Your draft is unchanged; retry or continue manually.');
+    if(requestSignal.aborted||e.name==='TimeoutError')throw new Error('Analysis took too long to respond. Check Supabase → Edge Functions → analyze-report → Logs, and redeploy the updated function. Your draft is unchanged; retry or continue manually.');
     const origin=globalThis.location?.origin;
     throw new Error('Could not reach the analysis function. Check that analyze-report is deployed in your connected Supabase project and that ALLOWED_ORIGINS includes '+(origin||'the app URL')+'. Also check your internet connection. Your draft is unchanged.');
    }
