@@ -16,15 +16,15 @@ This is classification and drafting, not a damage detector with precise bounding
 
 ## Enable live AI in your Supabase project
 
-You need your own OpenAI API project/key with API billing and model access. Put the key only in Supabase server secrets, never in frontend files, the database connection form, GitHub, or this chat. A ChatGPT sign-in is not supplied to the model endpoint by this application.
+The current function uses Google Gemini with `gemini-3.5-flash-lite` by default. Use a Google AI Studio project/key with Free Tier access to that model. No OpenAI key is needed and no paid-provider fallback is configured. Put the key only in Supabase server secrets, never in frontend files, the database connection form, GitHub, or this chat. A ChatGPT sign-in is not supplied to the model endpoint by this application.
 
 1. In Supabase SQL Editor, run migrations 001 through 005 if they are not already applied. In particular, 004 must run before 005. For an up-to-date project, run only `supabase/migrations/202610240006_report_intelligence.sql`. Do not rerun earlier migrations or the geography import.
 2. In your Supabase dashboard, open **Edge Functions → Secrets** and add:
 
    | Name | Value |
    | --- | --- |
-   | OPENAI_API_KEY | Your secret OpenAI API key |
-   | OPENAI_MODEL | `gpt-5.6-terra` (optional; this is the default) |
+   | GEMINI_API_KEY | Your Google AI Studio key |
+   | GEMINI_MODEL | `gemini-3.5-flash-lite` (optional; this is the default) |
    | ALLOWED_ORIGINS | `https://civic-relay-vinay-1019.animalargovindan.chatgpt.site,http://127.0.0.1:4173` |
 
    Origins must match exactly, without trailing slashes. Keep the published Site's owner-private sharing setting as desired; that is separate from Supabase account access. Standard Supabase URL and public API key environment variables are provided by Supabase. This function uses no service-role key.
@@ -40,15 +40,15 @@ You need your own OpenAI API project/key with API billing and model access. Put 
 5. Upload a JPEG/PNG/WebP photo. The app compresses it to JPEG. Check the consent box and select **Analyze photo**. Review the observations; apply the category and/or draft description only if they match what you saw. Confirm the actual location, inspect the routing pop-up and save.
 6. Test **Other** with “A large pothole near the intersection.” The local hint appears immediately; **Analyze description** requests a model suggestion after consent. Description-only requests do not send the uploaded photo.
 
-If the function is missing, deploy it. If it reports migration 006 missing, apply that migration. A 401 means the session or function authentication needs checking: sign in again and inspect Supabase function logs without disabling user verification. A browser network/CORS error can mean the app origin is missing from ALLOWED_ORIGINS. A provider usage error requires checking OpenAI API billing/model access. Do not copy tokens, keys, photos or report descriptions into logs or screenshots shared for troubleshooting.
+If the function is missing, deploy it. If it reports migration 006 missing, apply that migration. A 401 means the session or function authentication needs checking: sign in again and inspect Supabase function logs without disabling user verification. A browser network/CORS error can mean the app origin is missing from ALLOWED_ORIGINS. A provider usage error requires checking Google AI Studio quota/model access. Do not copy tokens, keys, photos or report descriptions into logs or screenshots shared for troubleshooting.
 
 ## Data flow and limits
 
-Only the compressed photo (photo mode) and description are sent for model analysis after consent. No pin coordinates, account identifiers, Auth email or resident-selected department are included in the OpenAI request. Photos and text may themselves contain personal or location information; consent does not remove that content. The authenticated request to Supabase carries the resident session as usual. The function forwards content to OpenAI, requests `store: false`, and does not write analysis content to the report database or logs. This setting is not a promise about all provider retention: review your provider's applicable data policy before a public pilot.
+Only the compressed photo (photo mode) and description are sent for model analysis after consent. No pin coordinates, account identifiers, Auth email or resident-selected department are included in the Gemini request. Photos and text may themselves contain personal or location information; consent does not remove that content. The authenticated request to Supabase carries the resident session as usual. The function forwards content to Google Gemini and does not write analysis content to the report database or logs. Free-tier content may be used by Google to improve products; use permission-cleared demo images and review the applicable Google data terms. This is not a promise of zero provider retention.
 
 The function validates same-project users, checks an explicit origin allowlist for browser calls, bounds streamed bodies and JPEG content, and uses strict structured output plus local validation. It accepts no remote image URL. Auth and provider requests have timeouts; canceling in the browser prevents a stale result from being applied but may not cancel provider processing or charges already started.
 
-Migration 006 enforces an atomic per-user budget of 20 attempts per UTC day, at least three seconds apart. Failed provider requests count as attempts. This is a demo guard, not a complete abuse/cost control system. Set provider project budgets/alerts and signup controls; add account-independent limits and monitoring before public access. Quota records store only user ID, UTC day, count and last request time. The underlying table is private and browser users have no direct read/write grants.
+Migration 006 enforces an atomic per-user budget of 20 attempts per UTC day, at least three seconds apart. Failed provider requests count as attempts. This is a demo guard, not a complete abuse/cost control system. Keep the Google project on Free Tier for a free-only demo, check its actual quotas, and configure signup controls; add account-independent limits and monitoring before public access. Quota records store only user ID, UTC day, count and last request time. The underlying table is private and browser users have no direct read/write grants.
 
 ## Verification and remaining acceptance
 
@@ -56,4 +56,10 @@ Automated tests exercise request validation, auth, origins, quotas, provider err
 
 After you enable the function, try permission-cleared photos of a pothole, leaking pipe, healthy pavement, ambiguous puddle, and a daytime streetlight. Include unrelated photos and conflicting descriptions. Check that uncertain results do not claim established damage or ownership. Record accuracy on a separate held-out set, latency and actual costs before the presentation. Hosted inference and real-image quality remain unverified until your API key and function are configured.
 
-Implementation follows [OpenAI image inputs](https://developers.openai.com/api/docs/guides/images-vision), [structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [the configured model's capabilities](https://developers.openai.com/api/docs/models/gpt-5.6-terra), [Supabase function authorization](https://supabase.com/docs/guides/functions/auth-headers), and [server secrets](https://supabase.com/docs/guides/functions/secrets).
+Implementation follows [Gemini image inputs](https://ai.google.dev/gemini-api/docs/generate-content/image-understanding), [structured outputs](https://ai.google.dev/gemini-api/docs/generate-content/structured-output), [API key authentication](https://ai.google.dev/gemini-api/docs/api-key), [free-tier pricing](https://ai.google.dev/gemini-api/docs/pricing), [Supabase function authorization](https://supabase.com/docs/guides/functions/auth-headers), and [server secrets](https://supabase.com/docs/guides/functions/secrets).
+
+## Upgrading from the OpenAI version
+
+Keep migration 006 and your existing reports; no new database migration is required. Add GEMINI_API_KEY to Supabase Secrets, optionally set GEMINI_MODEL, and redeploy analyze-report from this updated project. An OpenAI key in OPENAI_API_KEY is ignored. The browser checks that responses identify Gemini and asks you to update the function if it receives a response from the old version. The consent text now identifies Google Gemini. Publishing the static website does not deploy your Supabase Edge Function or save its secret.
+
+A Gemini quota error does not trigger automatic retries, a model switch, billing setup or another provider. Check AI Studio's usage page and wait for your quota to reset, or continue manually. Provider quotas can differ by model and account and are separate from Civic Relay's 20-attempt budget.

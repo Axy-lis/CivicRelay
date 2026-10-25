@@ -16,7 +16,7 @@ The resident workflow, draggable pin, local report tracking, agency dashboard, d
 - [ ] Add street-address search and confirm the final pin location rather than using a city's representative point as an address.
 - [ ] Expand the verified agency directory; fill water-provider gaps and verify road, highway, streetlight, and private-asset ownership. Keep uncertain matches in review. See docs/SOCAL.md.
 - [x] Implement protected photo/description analysis endpoint, opt-in editable suggestions, uncertain results, local description hints, and manual fallback.
-- [ ] Deploy/enable the analysis function on the owner’s Supabase project, set server secrets, and evaluate live predictions against representative held-out photos. Precise damage highlights remain separate work.
+- [ ] Deploy/enable the analysis function on the owner’s Supabase project, set the Gemini server secret, and evaluate live predictions against representative held-out photos. Precise damage highlights remain separate work.
 - [x] Add description-based suggestions for Other with evidence, accept/keep choices, and the existing verified location routing. Local rules work immediately; model analysis needs server setup.
 - [ ] Finish staff tracking: internal versus resident-visible notes, district/category/age/agency filters, assignment audit, and external ticket/delivery states when implemented.
 - [ ] Prepare permission-cleared photos, verified demo locations, repeatable sample data, and a recorded walkthrough with clearly labeled simulated actions and backup footage.

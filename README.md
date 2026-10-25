@@ -89,3 +89,5 @@ The local working copy is in this chat's workspace because macOS blocked the sel
 Projects already on migration 004 need only `supabase/migrations/202610240005_safety_reporting.sql` for safety reporting; no geographic reimport is required. Migration 004 enables dashboard deletion. Assigned staff and coordinators may delete reports from active views; shared evidence and audit records are retained. See the database setup guide for details.
 
 Photo/report intelligence setup is documented in [INTELLIGENCE.md](docs/INTELLIGENCE.md). Existing projects on migration 005 need only migration 006 and the analysis function/secrets, with no geography reimport.
+
+The analysis function now uses Google Gemini; configure `GEMINI_API_KEY` in Supabase server secrets and redeploy `analyze-report`. Existing migration 006 remains sufficient. See [intelligence setup](docs/INTELLIGENCE.md).

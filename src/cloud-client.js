@@ -43,6 +43,7 @@ export function createCloud(config, factory=createClient) {
    const response=await fetch(settings.url+'/functions/v1/analyze-report',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:settings.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(input),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000)});
    let body;try{body=await response.json();}catch{throw new Error('Analysis is unavailable. Deploy the analyze-report Edge Function in Supabase.');}
    if(!response.ok)throw new Error(body.error||(response.status===404?'Deploy the analyze-report Edge Function in Supabase.':'Analysis failed. Check the function setup or continue manually.'));
+   if(body.provider!=='gemini')throw new Error('Update the analyze-report Edge Function to the Gemini version before using analysis.');
    if(body.source!=='ai'||body.mode!==input.mode)throw new Error('Unexpected analysis response. Continue manually.');
    return body;
   },

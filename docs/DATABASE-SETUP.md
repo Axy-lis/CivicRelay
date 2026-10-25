@@ -137,4 +137,6 @@ Safety reports have private owner tracking, coordinator review, appropriate assi
 
 ## Photo and description intelligence
 
-After migrations 001–005, migration 006 adds private AI request budgets. Apply it once, then deploy the authenticated `analyze-report` Edge Function and set its server secrets as described in [Intelligence setup](INTELLIGENCE.md). This requires an OpenAI API key and billing; the static app never contains that key. Local Other-category description hints work immediately without this setup.
+After migrations 001–005, migration 006 adds private AI request budgets. Apply it once, then deploy the authenticated `analyze-report` Edge Function and set its server secrets as described in [Intelligence setup](INTELLIGENCE.md). This requires an Gemini API key and available quota; the static app never contains that key. Local Other-category description hints work immediately without this setup.
+
+The analysis function now uses Google Gemini; configure `GEMINI_API_KEY` in Supabase server secrets and redeploy `analyze-report`. Existing migration 006 remains sufficient. See [intelligence setup](INTELLIGENCE.md).
