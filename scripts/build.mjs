@@ -4,3 +4,5 @@ await build({entryPoints:['src/cloud-client.js'],outfile:'dist/cloud-client.js',
 console.log('Built shared database client.');
 
 await copyFile('supabase/functions/_shared/contract.js','dist/intelligence-contract.js');
+
+await import('./build-analysis-function.mjs');

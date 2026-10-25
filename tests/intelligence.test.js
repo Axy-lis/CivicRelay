@@ -50,3 +50,19 @@ test('Gemini quota errors never fall back to a paid provider or expose credentia
  const calls=[];const handler=createAnalysisHandler({env:k=>({...config,OPENAI_API_KEY:'unused-other-provider-key'})[k],fetcher:async(url)=>{calls.push(url);if(url.endsWith('/user'))return Response.json({id:'resident'});if(url.includes('/rpc/'))return Response.json(null);return Response.json({error:{message:'sensitive upstream diagnostic'}},{status:429});}});
  const response=await handler(post(input));assert.equal(response.status,429);assert.match((await response.json()).error,/Gemini free quota/);assert.equal(calls.length,3);assert.equal(calls.some(u=>u.includes('openai.com')),false);
 });
+
+test('analysis preflight works without paid requests on the published app and both local preview origins',async()=>{
+ let calls=0;const handler=createAnalysisHandler({env:k=>({...config,ALLOWED_ORIGINS:undefined})[k],fetcher:async()=>{calls++;throw Error('Preflight must not authenticate or call Gemini');}});
+ for(const origin of ['https://civic-relay-vinay-1019.animalargovindan.chatgpt.site','http://127.0.0.1:4173','http://localhost:4173']){
+  const response=await handler(new Request('https://edge.test',{method:'OPTIONS',headers:{origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,apikey,content-type'}}));assert.equal(response.status,204);assert.equal(response.headers.get('Access-Control-Allow-Origin'),origin);assert.match(response.headers.get('Access-Control-Allow-Headers'),/authorization/);
+ }
+ const denied=await handler(new Request('https://edge.test',{method:'OPTIONS',headers:{origin:'https://untrusted.test'}}));assert.equal(denied.status,403);assert.equal(denied.headers.get('Access-Control-Allow-Origin'),'null');assert.equal(calls,0);
+ const custom=createAnalysisHandler({env:k=>({...config,ALLOWED_ORIGINS:' https://app.test/ '})[k]});const accepted=await custom(new Request('https://edge.test',{method:'OPTIONS',headers:{origin:'https://app.test'}}));assert.equal(accepted.status,204);
+});
+
+test('dashboard bundle runs as one self-contained file and preserves preflight and authentication',async()=>{
+ const {readFile}=await import('node:fs/promises');const source=await readFile(new URL('../supabase/analyze-report.generated.ts',import.meta.url),'utf8');assert.equal(/^\s*import\s/m.test(source),false);
+ const prior=globalThis.Deno;let handler;try{globalThis.Deno={env:{get:()=>undefined},serve:fn=>{handler=fn;}};await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));assert.equal(typeof handler,'function');
+  const headers={origin:'https://civic-relay-vinay-1019.animalargovindan.chatgpt.site'};assert.equal((await handler(new Request('https://edge.test',{method:'OPTIONS',headers}))).status,204);assert.equal((await handler(new Request('https://edge.test',{method:'POST',headers,body:'{}'}))).status,401);
+ }finally{if(prior===undefined)delete globalThis.Deno;else globalThis.Deno=prior;}
+});

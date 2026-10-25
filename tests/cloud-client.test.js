@@ -48,3 +48,21 @@ test('AI client calls the authenticated same-project function without location o
   globalThis.fetch=async()=>Response.json({error:'Run migration 006'},{status:503});await assert.rejects(()=>cloud.analyze({mode:'description',description:'A pothole'}),/migration 006/);
  }finally{globalThis.fetch=original;}
 });
+
+test('analysis explains Safari transport errors, gateway failures, cancellations and timeouts without losing the draft',async()=>{
+ const original=globalThis.fetch;const cloud=createCloud(config,()=>({auth:{getSession:async()=>({data:{session:{access_token:'user-token'}},error:null})}}));const input={mode:'photo',description:'Water near a pipe',photo:'data:image/jpeg;base64,/9j/AA=='};
+ try{
+  globalThis.fetch=async()=>{throw new TypeError('Load failed');};await assert.rejects(()=>cloud.analyze(input),/analyze-report is deployed.*ALLOWED_ORIGINS/);
+  const controller=new AbortController();controller.abort();await assert.rejects(()=>cloud.analyze(input,{signal:controller.signal}),/canceled/);
+  globalThis.fetch=async()=>{throw new DOMException('Timeout','TimeoutError');};await assert.rejects(()=>cloud.analyze(input),/too long/);
+  for(const [status,code,message,expected] of [[404,'NOT_FOUND','Requested function does not exist',/Adding a Gemini secret alone/],[401,401,'Invalid JWT',/Sign out and sign in/],[503,'BOOT_ERROR','Function failed to start',/_shared files/]]){globalThis.fetch=async()=>Response.json({code,message},{status});await assert.rejects(()=>cloud.analyze(input),expected);}
+  globalThis.fetch=async()=>new Response('not JSON',{status:500});await assert.rejects(()=>cloud.analyze(input),/HTTP 500/);
+  globalThis.fetch=async()=>Response.json({error:'Gemini free quota or rate limit reached.'},{status:429});await assert.rejects(()=>cloud.analyze(input),/Gemini free quota/);
+  assert.equal(input.description,'Water near a pipe');
+ }finally{globalThis.fetch=original;}
+});
+
+test('analysis explains session lookup failures before attempting a provider request',async()=>{
+ const cloud=createCloud(config,()=>({auth:{getSession:async()=>{throw new TypeError('Load failed');}}}));
+ await assert.rejects(()=>cloud.analyze({mode:'description',description:'A pothole'}),/Could not confirm your sign-in/);
+});

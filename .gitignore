@@ -14,3 +14,5 @@ supabase/socal-editor-import/
 dist/intelligence-contract.js
 supabase/functions/.env
 supabase/functions/.env.*
+
+supabase/analyze-report.generated.ts

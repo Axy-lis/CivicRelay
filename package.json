@@ -9,7 +9,8 @@
     "check": "node --check dist/app.js && node --check dist/core.js && node --check dist/location.js && node --check src/cloud-client.js && node --check dist/workspace.js && node --check dist/demo-accounts.js && node --check dist/socal.js && node --check dist/coverage-map.js && node --check dist/safety.js && node --check dist/intelligence.js && node --check supabase/functions/_shared/analysis.js",
     "build": "node scripts/build.mjs",
     "coverage:sql": "node scripts/build-socal-sql.mjs",
-    "pretest": "npm run build"
+    "pretest": "npm run build",
+    "analysis:bundle": "node scripts/build-analysis-function.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0"
