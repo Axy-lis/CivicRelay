@@ -3,7 +3,7 @@ import {loadSoCal,SOCAL_LOCATIONS,DIRECTORY} from './socal.js';
 import {mountCoverageMap} from './coverage-map.js';
 import {SAFETY_DIRECTORY,SAFETY_NOTICE,SAFETY_ACK,routeStamp} from './safety.js';
 import {requestLocation} from './location.js';
-import {SharedWorkspace} from './workspace.js?v=20261025-analysis-connection';
+import {SharedWorkspace} from './workspace.js?v=20261025-analysis-timeout';
 import {suggestFromDescription,DEPARTMENT_TYPES,analysisStamp,validateAnalysis} from './intelligence.js';
 import {demoAccount,createAccountDemo,visibleDemoState,updateDemoIncident,deleteDemoIncident} from './demo-accounts.js';
 document.querySelector('#app').textContent='Loading official SoCal coverage…';

@@ -38,28 +38,34 @@ export function createAnalysisHandler({env,fetcher=fetch}){
   if(origin&&!allowed.includes(origin))return reply({error:'This app origin is not enabled for analysis.'},403);
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
   if(request.method!=='POST')return reply({error:'Use POST.'},405);
+  const started=Date.now();let stage='sign-in';
+  const deadline=AbortSignal.timeout(60000);
+  const stageSignal=ms=>AbortSignal.any([deadline,AbortSignal.timeout(ms)]);
   try{
    const authorization=request.headers.get('authorization');if(!/^Bearer \S+$/.test(authorization||''))throw new AnalysisError('Sign in before using AI analysis.',401);
    const url=env('SUPABASE_URL');let keys={};try{keys=JSON.parse(env('SUPABASE_PUBLISHABLE_KEYS')||'{}');}catch{}
    const apikey=env('SUPABASE_ANON_KEY')||env('SUPABASE_PUBLISHABLE_KEY')||keys.default||Object.values(keys)[0];
    if(!url||!apikey)throw new AnalysisError('Analysis server configuration is incomplete.',503);
    const headers={apikey,Authorization:authorization,'Content-Type':'application/json'};
-   const auth=await fetcher(url+'/auth/v1/user',{headers,signal:AbortSignal.timeout(10000)});
+   const auth=await fetcher(url+'/auth/v1/user',{headers,signal:stageSignal(10000)});
    if(!auth.ok||!(await auth.json()).id)throw new AnalysisError('Your session expired. Sign in again.',401);
    if(!env('GEMINI_API_KEY'))throw new AnalysisError('Gemini analysis is not enabled yet. Add GEMINI_API_KEY in Supabase Edge Function secrets.',503);
    if(!request.headers.get('content-type')?.includes('application/json'))throw new AnalysisError('Send a JSON report.');
    // Bound streamed bodies as well as Content-Length; never fetch caller-supplied URLs.
    if(Number(request.headers.get('content-length'))>4200000)throw new AnalysisError('Photo is too large.',413);
+   stage='upload';
    const reader=request.body?.getReader();if(!reader)throw new AnalysisError('Report is empty.');
    const chunks=[];let size=0;for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4200000){await reader.cancel();throw new AnalysisError('Photo is too large.',413);}chunks.push(value);}
    const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
    let json;try{json=JSON.parse(new TextDecoder().decode(bytes));}catch{throw new AnalysisError('Report JSON is invalid.');}
    const input=validateInput(json);
-   const quota=await fetcher(url+'/rest/v1/rpc/reserve_report_analysis',{method:'POST',headers,body:'{}',signal:AbortSignal.timeout(10000)});
+   stage='database';
+   const quota=await fetcher(url+'/rest/v1/rpc/reserve_report_analysis',{method:'POST',headers,body:'{}',signal:stageSignal(10000)});
    if(!quota.ok){if(quota.status===404)throw new AnalysisError('Run migration 202610240006_report_intelligence.sql before using AI analysis.',503);throw new AnalysisError('Analysis limit reached. Wait a moment or continue manually.',429);}
    const model=env('GEMINI_MODEL')||GEMINI_MODEL;
    if(!/^gemini-[a-z0-9.-]+$/.test(model))throw new AnalysisError('Check the GEMINI_MODEL server setting.',503);
-   const response=await fetcher('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'x-goog-api-key':env('GEMINI_API_KEY'),'Content-Type':'application/json'},body:JSON.stringify(responseRequest(input)),signal:AbortSignal.timeout(35000)});
+   stage='gemini';
+   const response=await fetcher('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'x-goog-api-key':env('GEMINI_API_KEY'),'Content-Type':'application/json'},body:JSON.stringify(responseRequest(input)),signal:stageSignal(35000)});
    if(!response.ok){
     if(response.status===429)throw new AnalysisError('Gemini free quota or rate limit reached. Wait and retry, or continue manually. No other provider was called.',429);
     if([400,401,403].includes(response.status))throw new AnalysisError('Gemini rejected this request. Check the GEMINI_API_KEY secret, project permissions, and model access.',502);
@@ -67,6 +73,12 @@ export function createAnalysisHandler({env,fetcher=fetch}){
     throw new AnalysisError('Gemini is temporarily unavailable. Continue manually or try later.',502);
    }
    return reply({analysis:parseResponse(await response.json()),source:'ai',provider:'gemini',mode:input.mode});
-  }catch(e){return reply({error:e instanceof AnalysisError?e.message:'Analysis timed out or could not connect. Your draft is unchanged; continue manually or retry.'},e instanceof AnalysisError?e.status:502);}
+  }catch(e){
+   const timedOut=e?.name==='TimeoutError'||e?.name==='AbortError'||deadline.aborted;
+   // Operational diagnostics only: never log photos, descriptions, tokens or provider bodies.
+   console.warn('report-analysis',JSON.stringify({stage,elapsedMs:Date.now()-started,status:timedOut?504:e instanceof AnalysisError?e.status:502,reason:timedOut?'timeout':e instanceof AnalysisError?'rejected':'connection'}));
+   const timeoutMessage={ 'sign-in':'The sign-in check timed out. Check your connection and sign in again.',upload:'The photo upload timed out. Try a smaller photo or check your connection.',database:'The analysis database check timed out. Check the Supabase project status and function logs.',gemini:'Gemini took too long to analyze this report. Try again shortly, or continue manually.' }[stage];
+   return reply({error:timedOut?timeoutMessage:e instanceof AnalysisError?e.message:'Analysis could not connect during the '+stage+' step. Check the function logs. Your draft is unchanged; continue manually or retry.'},timedOut?504:e instanceof AnalysisError?e.status:502);
+  }
  };
 }
