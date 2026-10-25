@@ -36,9 +36,11 @@ The resident workflow, draggable pin, local report tracking, agency dashboard, d
 - [ ] Keep setup instructions, source downloads, and feature/simulation labels current.
 - [ ] Establish the preferred permanent working folder and backup workflow; current durable source remains in the chat workspace.
 
-## Mobile application path (planned, not implemented)
+## Mobile application path
 
-- [ ] Adapt the resident experience to a full-screen mobile layout without the decorative phone frame or desktop navigation; retain the agency dashboard as a web interface.
+- [x] Adapt the resident experience to a full-screen mobile layout, fixed bottom navigation, phone-sized dialogs and readable forms; retain the desktop presentation and agency tools.
+- [x] Add home-screen manifest, app icons, Apple standalone metadata, and safe-area spacing.
+- [ ] Verify the home-screen launch, keyboard, camera, GPS, sign-in and safe areas on the actual personal phone.
 - [ ] Add Capacitor to reuse the existing web build in iOS and Android projects.
 - [ ] Integrate/test native camera/photo selection and geolocation permissions, authentication redirects, protected session storage, app resume behavior, and network failures.
 - [ ] Add app identity, icons, launch screens, safe-area handling, and platform configuration.
