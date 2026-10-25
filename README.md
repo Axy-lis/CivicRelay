@@ -30,6 +30,7 @@ Follow [Database setup](docs/DATABASE-SETUP.md) to create the hosted project, ap
 ## Implemented
 
 - Report intelligence: automatic local description hints for Other, plus opt-in photo/description AI suggestions through an authenticated server function. [Enable live analysis](docs/INTELLIGENCE.md).
+- Full-width mobile resident interface with fixed bottom navigation, touch-sized forms, mobile workspace menu, responsive agency cards and home-screen app metadata/icons. See [Phone setup](docs/MOBILE.md).
 - Resident photo reporting, JPEG compression, category/description entry, GPS with independent timeout and cancellation, manual coordinates, and sample locations.
 - Real SoCal geography across ten counties, city search, movable map pin, sourced intake suggestions, boundary review, and server-side PostGIS import/routing. See [SoCal coverage](docs/SOCAL.md).
 - Destination pop-up before review, with suggested contacts and clear manual-review fallbacks.
