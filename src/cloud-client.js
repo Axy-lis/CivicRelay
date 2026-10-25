@@ -38,11 +38,27 @@ export function createCloud(config, factory=createClient) {
   list:()=>rpc('list_workspace',{p_environment:settings.environment}),
   agencies:async()=>{const {data,error}=await client.from('agencies').select('id,name,is_demo,categories').eq('active',true);if(error)throw error;return data.filter(a=>settings.environment==='demo'||!a.is_demo);},
   async analyze(input,{signal}={}){
-   const session=requireResult(await client.auth.getSession()).session;
+   let session;
+   try{session=requireResult(await client.auth.getSession()).session;}catch{throw new Error('Could not confirm your sign-in. Check your connection, then sign out and sign in again.');}
    if(!session?.access_token)throw new Error('Sign in before using AI analysis.');
-   const response=await fetch(settings.url+'/functions/v1/analyze-report',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:settings.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(input),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000)});
-   let body;try{body=await response.json();}catch{throw new Error('Analysis is unavailable. Deploy the analyze-report Edge Function in Supabase.');}
-   if(!response.ok)throw new Error(body.error||(response.status===404?'Deploy the analyze-report Edge Function in Supabase.':'Analysis failed. Check the function setup or continue manually.'));
+   const requestSignal=signal?AbortSignal.any([signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000);
+   let response;
+   try{response=await fetch(settings.url+'/functions/v1/analyze-report',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:settings.publishableKey,'Content-Type':'application/json'},body:JSON.stringify(input),signal:requestSignal});}
+   catch(e){
+    if(signal?.aborted)throw new Error('Analysis canceled. Your draft is unchanged.');
+    if(requestSignal.aborted||e.name==='TimeoutError')throw new Error('Analysis took too long to respond. Your draft is unchanged; retry or continue manually.');
+    const origin=globalThis.location?.origin;
+    throw new Error('Could not reach the analysis function. Check that analyze-report is deployed in your connected Supabase project and that ALLOWED_ORIGINS includes '+(origin||'the app URL')+'. Also check your internet connection. Your draft is unchanged.');
+   }
+   let body;try{body=await response.json();}catch{body=null;}
+   if(!response.ok){
+    if(typeof body?.error==='string')throw new Error(body.error);
+    if(response.status===404)throw new Error('The analyze-report Edge Function was not found. Deploy it in the same Supabase project connected to this app. Adding a Gemini secret alone does not deploy the function.');
+    if([401,403].includes(response.status))throw new Error('The analysis function rejected your session or access. Sign out and sign in again. If it continues, check the function authentication settings and logs in Supabase.');
+    if(response.status===503)throw new Error('The analysis function is unavailable or could not start. Check its Supabase logs and redeploy it with its _shared files.');
+    throw new Error('Analysis could not complete (HTTP '+response.status+'). Check the function logs in Supabase, or continue manually.');
+   }
+   if(!body)throw new Error('The analysis function returned an unreadable response. Check its Supabase logs and deployment.');
    if(body.provider!=='gemini')throw new Error('Update the analyze-report Edge Function to the Gemini version before using analysis.');
    if(body.source!=='ai'||body.mode!==input.mode)throw new Error('Unexpected analysis response. Continue manually.');
    return body;

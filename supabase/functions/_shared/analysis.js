@@ -25,9 +25,14 @@ export function parseResponse(body){
  if(!candidate||candidate.finishReason!=='STOP')throw new AnalysisError('Analysis did not finish. Try again or continue manually.',502);
  try{return validateAnalysis(JSON.parse((candidate.content?.parts||[]).filter(p=>typeof p.text==='string'&&!p.thought).map(p=>p.text).join('')));}catch{throw new AnalysisError('Analysis was unclear. Try another photo or continue manually.',502);}
 }
+export const DEFAULT_ANALYSIS_ORIGINS=['https://civic-relay-vinay-1019.animalargovindan.chatgpt.site','http://127.0.0.1:4173','http://localhost:4173'];
+export function analysisOrigins(value){
+ const entries=value?.trim()?value.split(','):DEFAULT_ANALYSIS_ORIGINS;
+ return [...new Set(entries.flatMap(entry=>{try{const url=new URL(entry.trim());if(!['https:','http:'].includes(url.protocol)||url.username||url.password)return [];return [url.origin];}catch{return [];}}))];
+}
 export function createAnalysisHandler({env,fetcher=fetch}){
  return async request=>{
-  const allowed=(env('ALLOWED_ORIGINS')||'').split(',').map(x=>x.trim()).filter(Boolean),origin=request.headers.get('origin');
+  const allowed=analysisOrigins(env('ALLOWED_ORIGINS')),origin=request.headers.get('origin');
   const cors={'Access-Control-Allow-Origin':origin&&allowed.includes(origin)?origin:'null','Vary':'Origin','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store'};
   const reply=(body,status=200)=>Response.json(body,{status,headers:cors});
   if(origin&&!allowed.includes(origin))return reply({error:'This app origin is not enabled for analysis.'},403);

@@ -25,10 +25,12 @@ The current function uses Google Gemini with `gemini-3.5-flash-lite` by default.
    | --- | --- |
    | GEMINI_API_KEY | Your Google AI Studio key |
    | GEMINI_MODEL | `gemini-3.5-flash-lite` (optional; this is the default) |
-   | ALLOWED_ORIGINS | `https://civic-relay-vinay-1019.animalargovindan.chatgpt.site,http://127.0.0.1:4173` |
+   | ALLOWED_ORIGINS | `https://civic-relay-vinay-1019.animalargovindan.chatgpt.site,http://127.0.0.1:4173,http://localhost:4173` |
 
-   Origins must match exactly, without trailing slashes. Keep the published Site's owner-private sharing setting as desired; that is separate from Supabase account access. Standard Supabase URL and public API key environment variables are provided by Supabase. This function uses no service-role key.
-3. In a terminal opened inside the complete Civic Relay project folder, run:
+   The updated function defaults to these three origins when ALLOWED_ORIGINS is unset. An explicit value replaces that list; entries are normalized to origins, so a trailing slash is accepted. Do not use a wildcard. Keep the published Site's owner-private sharing setting as desired; that is separate from Supabase account access. Standard Supabase URL and public API key environment variables are provided by Supabase. This function uses no service-role key.
+3. Deploy with the dashboard (no terminal required): open **Edge Functions → Deploy a new function → Via Editor**. Name it **analyze-report**, replace all starter code in `index.ts` with the entire `supabase/analyze-report.generated.ts` file, and select **Deploy function**. If the function already exists, open its Code editor, replace the code and deploy updates. The generated file includes both shared modules, so do not paste the small source `index.ts` by itself. Keep user JWT verification enabled. This file contains no API key; the key stays in Supabase Secrets. Rebuild it with `npm run analysis:bundle` after server changes; normal builds generate it too.
+
+   Alternatively, in a terminal opened inside the complete updated project, run:
 
    ```sh
    npx supabase login
@@ -63,3 +65,15 @@ Implementation follows [Gemini image inputs](https://ai.google.dev/gemini-api/do
 Keep migration 006 and your existing reports; no new database migration is required. Add GEMINI_API_KEY to Supabase Secrets, optionally set GEMINI_MODEL, and redeploy analyze-report from this updated project. An OpenAI key in OPENAI_API_KEY is ignored. The browser checks that responses identify Gemini and asks you to update the function if it receives a response from the old version. The consent text now identifies Google Gemini. Publishing the static website does not deploy your Supabase Edge Function or save its secret.
 
 A Gemini quota error does not trigger automatic retries, a model switch, billing setup or another provider. Check AI Studio's usage page and wait for your quota to reset, or continue manually. Provider quotas can differ by model and account and are separate from Civic Relay's 20-attempt budget.
+
+## “Load failed” / cannot reach analysis
+
+This is a browser transport error, not a Gemini classification result. It can mean the function is not deployed, the browser preflight is blocked, the function failed to start before adding CORS headers, or the network/project URL is unavailable. Adding GEMINI_API_KEY alone does not deploy the function.
+
+1. Check that `analyze-report` appears under Edge Functions in the same Supabase project connected in Civic Relay. If absent, deploy it from the complete updated project.
+2. For an existing deployment, set ALLOWED_ORIGINS to the published app origin and any local origins you use. The updated handler includes safe defaults; older deployments need this secret or a redeployment. Browser permission origins and Supabase Auth redirect URLs are different settings.
+3. Check Edge Functions → analyze-report → Invocations/Logs while retrying. An OPTIONS/preflight request must succeed before the browser sends the photo POST. No requests may mean the app points to a different project or cannot reach it.
+4. Check deployment logs for missing `_shared` files or startup errors. Deploy from the project root so both shared files are included.
+5. Once the browser can read a response, the app can distinguish missing deployment, expired/rejected sign-in, missing migration/key, provider rejection and exhausted quota. Do not disable authentication or paste a Gemini key into frontend code to work around a transport error.
+
+The browser now preserves the draft and shows a connection/setup explanation instead of the raw Safari “Load failed” message. Server setup changes require redeploying your Supabase function; publishing the static site alone cannot change a function already running in your Supabase account.
